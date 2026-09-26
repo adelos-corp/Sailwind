@@ -21,10 +21,10 @@
   },
   "rewrites": [
     {
-      "source": "/api/(.*)",
+      "source": "/api/:path*",
       "destination": {
         "service": "api",
-        "path": "/$1"
+        "path": "/:path*"
       }
     },
     {
