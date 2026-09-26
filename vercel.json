@@ -23,7 +23,8 @@
     {
       "source": "/api/(.*)",
       "destination": {
-        "service": "api"
+        "service": "api",
+        "path": "/$1"
       }
     },
     {
