@@ -1,26 +1,16 @@
-import { getDb } from './db'
 import { randomUUID } from 'crypto'
 import type { Project } from '../types'
+import { insert, select } from './supabase'
 
-export function createProject(data: {
+type ProjectRow = {
+  id: string
   name: string
-  gitUrl?: string
-  localPath?: string
-}): Project {
-  const db = getDb()
-  const id = randomUUID()
-  db.prepare(
-    `INSERT INTO projects (id, name, git_url, local_path) VALUES (?, ?, ?, ?)`
-  ).run(id, data.name, data.gitUrl ?? null, data.localPath ?? null)
-  return getProjectById(id)!
+  git_url: string | null
+  local_path: string | null
+  created_at: string
 }
 
-export function getProjectById(id: string): Project | undefined {
-  const db = getDb()
-  const row = db
-    .prepare(`SELECT id, name, git_url, local_path, created_at FROM projects WHERE id = ?`)
-    .get(id) as Record<string, string> | undefined
-  if (!row) return undefined
+function rowToProject(row: ProjectRow): Project {
   return {
     id: row.id,
     name: row.name,
@@ -30,16 +20,26 @@ export function getProjectById(id: string): Project | undefined {
   }
 }
 
-export function listProjects(): Project[] {
-  const db = getDb()
-  const rows = db
-    .prepare(`SELECT id, name, git_url, local_path, created_at FROM projects ORDER BY created_at DESC`)
-    .all() as Record<string, string>[]
-  return rows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    gitUrl: row.git_url,
-    localPath: row.local_path,
-    createdAt: row.created_at,
-  }))
+export async function createProject(data: {
+  name: string
+  gitUrl?: string
+  localPath?: string
+}): Promise<Project> {
+  const row = await insert<ProjectRow>('visa_projects', {
+    id: randomUUID(),
+    name: data.name,
+    git_url: data.gitUrl ?? null,
+    local_path: data.localPath ?? null,
+  })
+  return rowToProject(row)
+}
+
+export async function getProjectById(id: string): Promise<Project | undefined> {
+  const rows = await select<ProjectRow>('visa_projects', { id })
+  return rows[0] ? rowToProject(rows[0]) : undefined
+}
+
+export async function listProjects(): Promise<Project[]> {
+  const rows = await select<ProjectRow>('visa_projects', {}, { order: 'created_at.desc' })
+  return rows.map(rowToProject)
 }
