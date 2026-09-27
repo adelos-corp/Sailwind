@@ -14,6 +14,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@vercel/functions':
+        specifier: ^3.3.6
+        version: 3.3.6
       '@fastify/cors':
         specifier: ^9.0.1
         version: 9.0.1
@@ -744,6 +747,15 @@ packages:
   '@vercel/oidc@3.2.0':
     resolution: {integrity: sha512-UycprH3T6n3jH0k44NHMa7pnFHGu/N05MjojYr+Mc6I7obkoLIJujSWwin1pCvdy/eOxrI/l3uDLQsmcrOb4ug==}
     engines: {node: '>= 20'}
+
+  '@vercel/functions@3.3.6':
+    resolution: {integrity: sha512-mLKK3H+v1XjzTiksYN7XV4sl/n8tqb0DeavoUzjFKRQMmx5x+vy1jIl24GY4C8D2dinQPV1ZuCSPhJptBeeE/A==}
+    engines: {node: '>= 20'}
+    peerDependencies:
+      '@aws-sdk/credential-provider-web-identity': '*'
+    peerDependenciesMeta:
+      '@aws-sdk/credential-provider-web-identity':
+        optional: true
 
   '@vercel/sandbox@3.5.0':
     resolution: {integrity: sha512-BZjrOiPImL9o3mvFanEZYCEV8YLhtpAzxJa9PuweZBkIXSbdsD1tBytx42a3/0nJOHpCYMHBrBNNqD8nklzY1A==}
@@ -2754,6 +2766,8 @@ packages:
     resolution: {integrity: sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q==}
 
 snapshots:
+
+  '@vercel/functions@3.3.6': {}
 
   '@alloc/quick-lru@5.3.0': {}
 
