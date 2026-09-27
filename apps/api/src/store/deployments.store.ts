@@ -1,112 +1,109 @@
-import { getDb } from './db'
 import { randomUUID } from 'crypto'
 import type { Deployment, DeploymentStatus } from '../types'
+import { count, insert, select, update } from './supabase'
 
-function rowToDeployment(row: Record<string, unknown>): Deployment {
+type DeploymentRow = {
+  id: string
+  project_id: string
+  status: DeploymentStatus
+  attempt_number: number
+  parent_deployment_id: string | null
+  docker_image_id: string | null
+  container_id: string | null
+  created_at: string
+  completed_at: string | null
+}
+
+function rowToDeployment(row: DeploymentRow): Deployment {
   return {
-    id: row.id as string,
-    projectId: row.project_id as string,
-    status: row.status as DeploymentStatus,
-    attemptNumber: row.attempt_number as number,
-    parentDeploymentId: row.parent_deployment_id as string | null,
-    dockerImageId: row.docker_image_id as string | null,
-    containerId: row.container_id as string | null,
-    createdAt: row.created_at as string,
-    completedAt: row.completed_at as string | null,
+    id: row.id,
+    projectId: row.project_id,
+    status: row.status,
+    attemptNumber: row.attempt_number,
+    parentDeploymentId: row.parent_deployment_id,
+    dockerImageId: row.docker_image_id,
+    containerId: row.container_id,
+    createdAt: row.created_at,
+    completedAt: row.completed_at,
   }
 }
 
-export function createDeployment(data: {
+export async function createDeployment(data: {
   projectId: string
   attemptNumber?: number
   parentDeploymentId?: string
-}): Deployment {
-  const db = getDb()
-  const id = randomUUID()
-  db.prepare(
-    `INSERT INTO deployments (id, project_id, status, attempt_number, parent_deployment_id)
-     VALUES (?, ?, 'PENDING', ?, ?)`
-  ).run(
-    id,
-    data.projectId,
-    data.attemptNumber ?? 1,
-    data.parentDeploymentId ?? null
-  )
-  return getDeploymentById(id)!
-}
-
-export function getDeploymentById(id: string): Deployment | undefined {
-  const db = getDb()
-  const row = db
-    .prepare(`SELECT * FROM deployments WHERE id = ?`)
-    .get(id) as Record<string, unknown> | undefined
-  if (!row) return undefined
+}): Promise<Deployment> {
+  const row = await insert<DeploymentRow>('visa_deployments', {
+    id: randomUUID(),
+    project_id: data.projectId,
+    status: 'PENDING',
+    attempt_number: data.attemptNumber ?? 1,
+    parent_deployment_id: data.parentDeploymentId ?? null,
+  })
   return rowToDeployment(row)
 }
 
-export function updateDeploymentStatus(
+export async function getDeploymentById(id: string): Promise<Deployment | undefined> {
+  const rows = await select<DeploymentRow>('visa_deployments', { id })
+  return rows[0] ? rowToDeployment(rows[0]) : undefined
+}
+
+export async function updateDeploymentStatus(
   id: string,
   status: DeploymentStatus,
   extra?: { dockerImageId?: string; containerId?: string }
-): void {
-  const db = getDb()
+): Promise<void> {
   const terminal: DeploymentStatus[] = ['LIVE', 'TERMINAL', 'FAILED']
-  const completedAt = terminal.includes(status) ? new Date().toISOString() : null
-
-  db.prepare(
-    `UPDATE deployments SET status = ?, docker_image_id = COALESCE(?, docker_image_id),
-     container_id = COALESCE(?, container_id),
-     completed_at = COALESCE(?, completed_at)
-     WHERE id = ?`
-  ).run(
-    status,
-    extra?.dockerImageId ?? null,
-    extra?.containerId ?? null,
-    completedAt,
-    id
-  )
+  const patch: Record<string, unknown> = { status }
+  if (extra?.dockerImageId) patch.docker_image_id = extra.dockerImageId
+  if (extra?.containerId) patch.container_id = extra.containerId
+  if (terminal.includes(status)) patch.completed_at = new Date().toISOString()
+  await update('visa_deployments', { id }, patch)
 }
 
-export function listDeploymentsByProject(projectId: string): Deployment[] {
-  const db = getDb()
-  const rows = db
-    .prepare(
-      `SELECT * FROM deployments WHERE project_id = ? ORDER BY created_at DESC`
-    )
-    .all(projectId) as Record<string, unknown>[]
+export async function listDeploymentsByProject(projectId: string): Promise<Deployment[]> {
+  const rows = await select<DeploymentRow>(
+    'visa_deployments',
+    { project_id: projectId },
+    { order: 'created_at.desc' }
+  )
   return rows.map(rowToDeployment)
 }
 
-export function appendLog(data: {
+export async function appendLog(data: {
   deploymentId: string
   source: string
   lineNumber: number
   content: string
-}): void {
-  const db = getDb()
-  db.prepare(
-    `INSERT INTO deployment_logs (deployment_id, source, line_number, content)
-     VALUES (?, ?, ?, ?)`
-  ).run(data.deploymentId, data.source, data.lineNumber, data.content)
+}): Promise<void> {
+  await insert('visa_deployment_logs', {
+    deployment_id: data.deploymentId,
+    source: data.source,
+    line_number: data.lineNumber,
+    content: data.content,
+  })
 }
 
-export function getLogs(deploymentId: string): Array<{
+export async function getLogs(deploymentId: string): Promise<Array<{
   lineNumber: number
   source: string
   content: string
   timestamp: string
-}> {
-  const db = getDb()
-  const rows = db
-    .prepare(
-      `SELECT line_number, source, content, timestamp FROM deployment_logs
-       WHERE deployment_id = ? ORDER BY line_number ASC`
-    )
-    .all(deploymentId) as Array<Record<string, unknown>>
+}>> {
+  const rows = await select<{
+    line_number: number
+    source: string
+    content: string
+    timestamp: string
+  }>('visa_deployment_logs', { deployment_id: deploymentId }, { order: 'line_number.asc' })
   return rows.map(r => ({
-    lineNumber: r.line_number as number,
-    source: r.source as string,
-    content: r.content as string,
-    timestamp: r.timestamp as string,
+    lineNumber: r.line_number,
+    source: r.source,
+    content: r.content,
+    timestamp: r.timestamp,
   }))
+}
+
+export async function countDeploymentsByProject(projectId: string): Promise<number> {
+  return count('visa_deployments', { project_id: projectId })
 }
