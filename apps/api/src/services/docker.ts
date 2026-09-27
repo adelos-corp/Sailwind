@@ -29,13 +29,50 @@ async function getSandbox(name: string, port?: number): Promise<Sandbox> {
 }
 
 async function ensureDocker(sandbox: Sandbox): Promise<void> {
-  const check = await sandbox.runCommand({ cmd: 'docker', args: ['info'] })
-  if (check.exitCode === 0) return
-  const install = await sandbox.runCommand({ cmd: 'sh', args: ['-lc', 'sudo apt-get update && sudo apt-get install -y docker.io'] })
-  if (install.exitCode !== 0) throw new Error('Docker installation failed: ' + await install.stderr())
-  const daemon = await sandbox.runCommand({ cmd: 'sh', args: ['-lc', 'sudo dockerd --host=unix:///var/run/docker.sock >/tmp/dockerd.log 2>&1 &'] })
-  if (daemon.exitCode !== 0) throw new Error('Docker daemon failed to start: ' + await daemon.stderr())
-  const ready = await sandbox.runCommand({ cmd: 'sh', args: ['-lc', 'for i in $(seq 1 30); do sudo docker info >/dev/null 2>&1 && exit 0; sleep 1; done; exit 1'] })
+  // Vercel Sandbox throws a 400 when runCommand is asked to execute a
+  // binary that is not installed, rather than returning a non-zero exit code.
+  // Treat that as "Docker is missing" and bootstrap it explicitly.
+  let dockerReady = false
+  try {
+    const check = await sandbox.runCommand({ cmd: 'docker', args: ['info'] })
+    dockerReady = check.exitCode === 0
+  } catch {
+    dockerReady = false
+  }
+
+  if (dockerReady) return
+
+  const update = await sandbox.runCommand({
+    sudo: true,
+    cmd: 'apt-get',
+    args: ['update'],
+  })
+  if (update.exitCode !== 0) {
+    throw new Error('Docker package index update failed: ' + await update.stderr())
+  }
+
+  const install = await sandbox.runCommand({
+    sudo: true,
+    cmd: 'apt-get',
+    args: ['install', '-y', 'docker.io'],
+  })
+  if (install.exitCode !== 0) {
+    throw new Error('Docker installation failed: ' + await install.stderr())
+  }
+
+  const daemon = await sandbox.runCommand({
+    sudo: true,
+    cmd: 'dockerd',
+    detached: true,
+  })
+  if (daemon.exitCode !== 0) {
+    throw new Error('Docker daemon failed to start: ' + await daemon.stderr())
+  }
+
+  const ready = await sandbox.runCommand({
+    cmd: 'sh',
+    args: ['-lc', 'for i in $(seq 1 30); do sudo docker info >/dev/null 2>&1 && exit 0; sleep 1; done; exit 1'],
+  })
   if (ready.exitCode !== 0) throw new Error('Docker daemon did not become ready')
 }
 
