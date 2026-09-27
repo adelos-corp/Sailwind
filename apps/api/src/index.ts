@@ -20,16 +20,25 @@ async function main() {
   })
 
   // Health check
-  app.get('/health', async () => ({
+  const health = async () => ({
     status: 'ok',
     service: 'visa-api',
     version: '0.1.0',
     timestamp: new Date().toISOString(),
-  }))
+  })
+
+  app.get('/health', health)
+  app.get('/api/health', health)
 
   // Routes
   await app.register(projectRoutes)
   await app.register(deploymentRoutes)
+
+  // Production service routing may preserve the /api prefix.
+  // Register the same API surface under /api so production does not
+  // depend on Vercel path rewriting behavior.
+  await app.register(projectRoutes, { prefix: '/api' })
+  await app.register(deploymentRoutes, { prefix: '/api' })
 
   // Start server
   await app.listen({ port: PORT, host: HOST })
