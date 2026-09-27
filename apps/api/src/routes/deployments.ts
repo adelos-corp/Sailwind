@@ -102,10 +102,13 @@ export async function deploymentRoutes(app: FastifyInstance) {
       return { approvalId, gate, decision }
     }
 
+    // Keep the approval request alive while the consequential pipeline work runs.
+    // Vercel Functions can terminate fire-and-forget work immediately after the
+    // response, which previously left approved deployments stuck at DEPLOY.
     if (gate === 'DEPLOY') {
-      setImmediate(() => resumeAfterDeployApproval(request.params.id).catch(console.error))
+      await resumeAfterDeployApproval(request.params.id)
     } else if (gate === 'CORRECT') {
-      setImmediate(() => resumeAfterCorrectionApproval(request.params.id).catch(console.error))
+      await resumeAfterCorrectionApproval(request.params.id)
     }
 
     return { approvalId, gate, decision }
