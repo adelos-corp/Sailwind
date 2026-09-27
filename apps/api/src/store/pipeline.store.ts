@@ -1,90 +1,12 @@
-import { getDb } from './db'
 import { randomUUID } from 'crypto'
 import type { ProjectAnalysis, Diagnosis, Verification } from '../types'
-
-// ─── Project Analysis ─────────────────────────────────────────────────────────
-
-export function upsertAnalysis(data: {
-  projectId: string
-  framework: string
-  runtime: string
-  port: number
-  healthPath: string
-  buildCommand: string
-  envVarsNeeded: string[]
-  rawJson: string
-}): ProjectAnalysis {
-  const db = getDb()
-  const id = randomUUID()
-  db.prepare(
-    `INSERT INTO project_analyses
-       (id, project_id, framework, runtime, port, health_path, build_command, env_vars_needed, raw_json)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(
-    id, data.projectId, data.framework, data.runtime, data.port,
-    data.healthPath, data.buildCommand, JSON.stringify(data.envVarsNeeded), data.rawJson
-  )
-  return getAnalysisByProject(data.projectId)!
-}
-
-export function getAnalysisByProject(projectId: string): ProjectAnalysis | undefined {
-  const db = getDb()
-  const row = db.prepare(
-    `SELECT * FROM project_analyses WHERE project_id = ? ORDER BY created_at DESC LIMIT 1`
-  ).get(projectId) as Record<string, unknown> | undefined
-  if (!row) return undefined
-  return {
-    id: row.id as string,
-    projectId: row.project_id as string,
-    framework: row.framework as string,
-    runtime: row.runtime as string,
-    port: row.port as number,
-    healthPath: row.health_path as string,
-    buildCommand: row.build_command as string,
-    envVarsNeeded: JSON.parse(row.env_vars_needed as string),
-    rawJson: row.raw_json as string,
-    createdAt: row.created_at as string,
-  }
-}
-
-// ─── Pre-check report ─────────────────────────────────────────────────────────
+import { count, insert, select } from './supabase'
 
 export interface CheckResult {
   name: string
   status: 'PASS' | 'WARN' | 'FAIL'
   message: string
 }
-
-export function savePreCheckReport(data: {
-  deploymentId: string
-  checks: CheckResult[]
-  overallStatus: 'PASS' | 'WARN' | 'FAIL'
-}): string {
-  const db = getDb()
-  const id = randomUUID()
-  db.prepare(
-    `INSERT INTO pre_check_reports (id, deployment_id, checks_json, overall_status)
-     VALUES (?, ?, ?, ?)`
-  ).run(id, data.deploymentId, JSON.stringify(data.checks), data.overallStatus)
-  return id
-}
-
-export function getPreCheckReport(deploymentId: string): {
-  id: string; checks: CheckResult[]; overallStatus: string
-} | undefined {
-  const db = getDb()
-  const row = db.prepare(
-    `SELECT * FROM pre_check_reports WHERE deployment_id = ? ORDER BY created_at DESC LIMIT 1`
-  ).get(deploymentId) as Record<string, unknown> | undefined
-  if (!row) return undefined
-  return {
-    id: row.id as string,
-    checks: JSON.parse(row.checks_json as string),
-    overallStatus: row.overall_status as string,
-  }
-}
-
-// ─── Deployment Plan ──────────────────────────────────────────────────────────
 
 export interface DeploymentPlan {
   imageTag: string
@@ -95,113 +17,214 @@ export interface DeploymentPlan {
   sourceUrl?: string
 }
 
-export function savePlan(deploymentId: string, plan: DeploymentPlan): string {
-  const db = getDb()
+export async function upsertAnalysis(data: {
+  projectId: string
+  framework: string
+  runtime: string
+  port: number
+  healthPath: string
+  buildCommand: string
+  envVarsNeeded: string[]
+  rawJson: string
+}): Promise<ProjectAnalysis> {
+  const row = await insert<Record<string, unknown>>('visa_project_analyses', {
+    id: randomUUID(),
+    project_id: data.projectId,
+    framework: data.framework,
+    runtime: data.runtime,
+    port: data.port,
+    health_path: data.healthPath,
+    build_command: data.buildCommand,
+    env_vars_needed: data.envVarsNeeded,
+    raw_json: data.rawJson,
+  })
+  return {
+    id: row.id as string,
+    projectId: row.project_id as string,
+    framework: row.framework as string,
+    runtime: row.runtime as string,
+    port: row.port as number,
+    healthPath: row.health_path as string,
+    buildCommand: row.build_command as string,
+    envVarsNeeded: row.env_vars_needed as string[],
+    rawJson: row.raw_json as string,
+    createdAt: row.created_at as string,
+  }
+}
+
+export async function getAnalysisByProject(projectId: string): Promise<ProjectAnalysis | undefined> {
+  const rows = await select<Record<string, unknown>>(
+    'visa_project_analyses',
+    { project_id: projectId },
+    { order: 'created_at.desc', limit: 1 }
+  )
+  const row = rows[0]
+  if (!row) return undefined
+  return {
+    id: row.id as string,
+    projectId: row.project_id as string,
+    framework: row.framework as string,
+    runtime: row.runtime as string,
+    port: row.port as number,
+    healthPath: row.health_path as string,
+    buildCommand: row.build_command as string,
+    envVarsNeeded: row.env_vars_needed as string[],
+    rawJson: row.raw_json as string,
+    createdAt: row.created_at as string,
+  }
+}
+
+export async function savePreCheckReport(data: {
+  deploymentId: string
+  checks: CheckResult[]
+  overallStatus: 'PASS' | 'WARN' | 'FAIL'
+}): Promise<string> {
   const id = randomUUID()
-  db.prepare(
-    `INSERT INTO deployment_plans (id, deployment_id, plan_json) VALUES (?, ?, ?)`
-  ).run(id, deploymentId, JSON.stringify(plan))
+  await insert('visa_pre_check_reports', {
+    id,
+    deployment_id: data.deploymentId,
+    checks_json: data.checks,
+    overall_status: data.overallStatus,
+  })
   return id
 }
 
-export function getPlan(deploymentId: string): DeploymentPlan | undefined {
-  const db = getDb()
-  const row = db.prepare(
-    `SELECT plan_json FROM deployment_plans WHERE deployment_id = ? ORDER BY created_at DESC LIMIT 1`
-  ).get(deploymentId) as { plan_json: string } | undefined
+export async function getPreCheckReport(deploymentId: string): Promise<{
+  id: string
+  checks: CheckResult[]
+  overallStatus: string
+} | undefined> {
+  const rows = await select<Record<string, unknown>>(
+    'visa_pre_check_reports',
+    { deployment_id: deploymentId },
+    { order: 'created_at.desc', limit: 1 }
+  )
+  const row = rows[0]
   if (!row) return undefined
-  return JSON.parse(row.plan_json)
+  return {
+    id: row.id as string,
+    checks: row.checks_json as CheckResult[],
+    overallStatus: row.overall_status as string,
+  }
 }
 
-// ─── Diagnosis ────────────────────────────────────────────────────────────────
+export async function savePlan(deploymentId: string, plan: DeploymentPlan): Promise<string> {
+  const id = randomUUID()
+  await insert('visa_deployment_plans', {
+    id,
+    deployment_id: deploymentId,
+    plan_json: plan,
+  })
+  return id
+}
 
-export function saveDiagnosis(data: {
+export async function getPlan(deploymentId: string): Promise<DeploymentPlan | undefined> {
+  const rows = await select<{ plan_json: DeploymentPlan }>(
+    'visa_deployment_plans',
+    { deployment_id: deploymentId },
+    { order: 'created_at.desc', limit: 1 }
+  )
+  return rows[0]?.plan_json
+}
+
+export async function saveDiagnosis(data: {
   deploymentId: string
   failureType: 'CORRECTABLE' | 'NEEDS_HUMAN' | 'UNRECOVERABLE'
   rootCause: string
   proposedCorrection: Record<string, unknown>
   confidence: number
   rationale: string
-}): Diagnosis {
-  const db = getDb()
+}): Promise<Diagnosis> {
   const id = randomUUID()
-  db.prepare(
-    `INSERT INTO diagnoses
-       (id, deployment_id, failure_type, root_cause, proposed_correction_json, confidence, rationale)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
-  ).run(
-    id, data.deploymentId, data.failureType, data.rootCause,
-    JSON.stringify(data.proposedCorrection), data.confidence, data.rationale
-  )
-  return getDiagnosis(data.deploymentId)!
-}
-
-export function getDiagnosis(deploymentId: string): Diagnosis | undefined {
-  const db = getDb()
-  const row = db.prepare(
-    `SELECT * FROM diagnoses WHERE deployment_id = ? ORDER BY created_at DESC LIMIT 1`
-  ).get(deploymentId) as Record<string, unknown> | undefined
-  if (!row) return undefined
+  const row = await insert<Record<string, unknown>>('visa_diagnoses', {
+    id,
+    deployment_id: data.deploymentId,
+    failure_type: data.failureType,
+    root_cause: data.rootCause,
+    proposed_correction_json: data.proposedCorrection,
+    confidence: data.confidence,
+    rationale: data.rationale,
+  })
   return {
     id: row.id as string,
     deploymentId: row.deployment_id as string,
     failureType: row.failure_type as Diagnosis['failureType'],
     rootCause: row.root_cause as string,
-    proposedCorrectionJson: row.proposed_correction_json as string,
+    proposedCorrectionJson: JSON.stringify(row.proposed_correction_json),
     confidence: row.confidence as number,
     rationale: row.rationale as string,
     createdAt: row.created_at as string,
   }
 }
 
-// ─── Correction attempt ───────────────────────────────────────────────────────
+export async function getDiagnosis(deploymentId: string): Promise<Diagnosis | undefined> {
+  const rows = await select<Record<string, unknown>>(
+    'visa_diagnoses',
+    { deployment_id: deploymentId },
+    { order: 'created_at.desc', limit: 1 }
+  )
+  const row = rows[0]
+  if (!row) return undefined
+  return {
+    id: row.id as string,
+    deploymentId: row.deployment_id as string,
+    failureType: row.failure_type as Diagnosis['failureType'],
+    rootCause: row.root_cause as string,
+    proposedCorrectionJson: JSON.stringify(row.proposed_correction_json),
+    confidence: row.confidence as number,
+    rationale: row.rationale as string,
+    createdAt: row.created_at as string,
+  }
+}
 
-export function saveCorrectionAttempt(data: {
+export async function saveCorrectionAttempt(data: {
   deploymentId: string
   diagnosisId: string
   patchJson: Record<string, unknown>
-}): string {
-  const db = getDb()
+}): Promise<string> {
   const id = randomUUID()
-  db.prepare(
-    `INSERT INTO correction_attempts (id, deployment_id, diagnosis_id, patch_json, validation_status)
-     VALUES (?, ?, ?, ?, 'APPLIED')`
-  ).run(id, data.deploymentId, data.diagnosisId, JSON.stringify(data.patchJson))
+  await insert('visa_correction_attempts', {
+    id,
+    deployment_id: data.deploymentId,
+    diagnosis_id: data.diagnosisId,
+    patch_json: data.patchJson,
+    validation_status: 'APPLIED',
+  })
   return id
 }
 
-export function countCorrectionAttempts(deploymentId: string): number {
-  const db = getDb()
-  const row = db.prepare(
-    `SELECT COUNT(*) as n FROM correction_attempts WHERE deployment_id = ?`
-  ).get(deploymentId) as { n: number }
-  return row.n
+export async function countCorrectionAttempts(deploymentId: string): Promise<number> {
+  return count('visa_correction_attempts', { deployment_id: deploymentId })
 }
 
-// ─── Verification ─────────────────────────────────────────────────────────────
-
-export function saveVerification(data: {
+export async function saveVerification(data: {
   deploymentId: string
   endpoint: string
   httpStatus: number | null
   responseTimeMs: number | null
   healthy: boolean
   attempts: number
-}): Verification {
-  const db = getDb()
+}): Promise<Verification> {
   const id = randomUUID()
-  db.prepare(
-    `INSERT INTO verifications
-       (id, deployment_id, endpoint, http_status, response_time_ms, healthy, attempts)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
-  ).run(
-    id, data.deploymentId, data.endpoint, data.httpStatus,
-    data.responseTimeMs, data.healthy ? 1 : 0, data.attempts
-  )
+  const completedAt = new Date().toISOString()
+  await insert('visa_verifications', {
+    id,
+    deployment_id: data.deploymentId,
+    endpoint: data.endpoint,
+    http_status: data.httpStatus,
+    response_time_ms: data.responseTimeMs,
+    healthy: data.healthy,
+    attempts: data.attempts,
+    completed_at: completedAt,
+  })
   return {
-    id, deploymentId: data.deploymentId, endpoint: data.endpoint,
-    httpStatus: data.httpStatus, responseTimeMs: data.responseTimeMs,
-    healthy: data.healthy, attempts: data.attempts,
-    completedAt: new Date().toISOString(),
+    id,
+    deploymentId: data.deploymentId,
+    endpoint: data.endpoint,
+    httpStatus: data.httpStatus,
+    responseTimeMs: data.responseTimeMs,
+    healthy: data.healthy,
+    attempts: data.attempts,
+    completedAt,
   }
 }
