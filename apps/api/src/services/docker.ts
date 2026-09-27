@@ -24,7 +24,7 @@ async function getSandbox(name: string, port?: number): Promise<Sandbox> {
   try {
     return await Sandbox.get({ name, ...auth })
   } catch {
-    return await Sandbox.create({ name, ...auth, ports: port ? [port] : undefined, timeout: 24 * 60 * 60 * 1000 })
+    return await Sandbox.create({ name, ...auth, ports: port ? [port] : undefined, timeout: 40 * 60 * 1000 })
   }
 }
 
