@@ -8,11 +8,23 @@ export interface DockerRunResult { containerId: string; port: number }
 const USE_VERCEL_SANDBOX = process.env.VERCEL === '1' || process.env.RUNNER_MODE === 'vercel-sandbox'
 const PROJECT_DIR = '/vercel/sandbox/project'
 
+// Container-based Vercel runtimes do not expose the Sandbox OIDC request context.
+// When explicit access-token credentials are configured, pass them to every
+// Sandbox lookup/create call so production runners work from the API container.
+function sandboxAuth() {
+  const token = process.env.VERCEL_TOKEN
+  const teamId = process.env.VERCEL_TEAM_ID
+  const projectId = process.env.VERCEL_PROJECT_ID
+  if (!token || !teamId || !projectId) return {}
+  return { token, teamId, projectId }
+}
+
 async function getSandbox(name: string, port?: number): Promise<Sandbox> {
+  const auth = sandboxAuth()
   try {
-    return await Sandbox.get({ name })
+    return await Sandbox.get({ name, ...auth })
   } catch {
-    return await Sandbox.create({ name, ports: port ? [port] : undefined, timeout: 24 * 60 * 60 * 1000 })
+    return await Sandbox.create({ name, ...auth, ports: port ? [port] : undefined, timeout: 24 * 60 * 60 * 1000 })
   }
 }
 
