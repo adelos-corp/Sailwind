@@ -98,13 +98,62 @@ async function remoteBuild(sourceUrl: string, tag: string, onLog: (line: string)
     const clone = await sandbox.runCommand({ cmd: 'git', args: ['clone', '--depth', '1', sourceUrl, PROJECT_DIR] })
     if (clone.exitCode !== 0) throw new Error('git clone failed: ' + await clone.stderr())
   }
-  const result = await sandbox.runCommand({ cmd: 'docker', args: ['build', '-t', tag, '.'], cwd: PROJECT_DIR })
-  const output = (await result.stdout()) + '\n' + (await result.stderr())
-  const logs = output.split('\n').filter(Boolean)
-  logs.forEach(onLog)
-  if (result.exitCode !== 0) throw new Error('docker build failed (exit ' + result.exitCode + ')')
-  const inspect = await sandbox.runCommand({ cmd: 'docker', args: ['inspect', '--format={{.Id}}', tag] })
-  return { imageId: (await inspect.stdout()).trim() || tag, logs }
+  // Do not await a foreground `docker build` command. Vercel's Sandbox command
+  // endpoint can terminate a long-running command even though the Sandbox itself
+  // is still alive. Run the build as a detached job and poll its log/exit marker.
+  // This keeps the API invocation independent from Docker's build duration.
+  const buildKey = tag.replace(/[^a-zA-Z0-9_-]/g, '-')
+  const logFile = `/tmp/visa-build-${buildKey}.log`
+  const exitFile = `/tmp/visa-build-${buildKey}.exit`
+  await sandbox.runCommand({
+    cmd: 'sh',
+    args: [
+      '-lc',
+      `rm -f '${logFile}' '${exitFile}' && (docker build -t '${tag}' . >'${logFile}' 2>&1; echo $? >'${exitFile}') >/dev/null 2>&1 &`,
+    ],
+    cwd: PROJECT_DIR,
+    detached: true,
+  })
+  onLog('Docker build started in background')
+
+  const logs: string[] = []
+  const seen = new Set<string>()
+  const buildStartedAt = Date.now()
+  const buildTimeoutMs = 30 * 60 * 1000
+
+  while (Date.now() - buildStartedAt < buildTimeoutMs) {
+    const logResult = await sandbox.runCommand({
+      cmd: 'sh',
+      args: ['-lc', `test -f '${logFile}' && cat '${logFile}' || true`],
+    })
+    const output = await logResult.stdout()
+    for (const line of output.split('\n').filter(Boolean)) {
+      if (!seen.has(line)) {
+        seen.add(line)
+        logs.push(line)
+        onLog(line)
+      }
+    }
+
+    const status = await sandbox.runCommand({
+      cmd: 'sh',
+      args: ['-lc', `if test -f '${exitFile}'; then cat '${exitFile}'; else printf RUNNING; fi`],
+    })
+    const exitText = (await status.stdout()).trim()
+
+    if (exitText !== 'RUNNING') {
+      const exitCode = Number.parseInt(exitText, 10)
+      if (!Number.isFinite(exitCode) || exitCode !== 0) {
+        throw new Error('docker build failed (exit ' + (Number.isFinite(exitCode) ? exitCode : 'unknown') + ')')
+      }
+      const inspect = await sandbox.runCommand({ cmd: 'docker', args: ['inspect', '--format={{.Id}}', tag] })
+      return { imageId: (await inspect.stdout()).trim() || tag, logs }
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 1000))
+  }
+
+  throw new Error(`docker build timed out after ${buildTimeoutMs}ms`)
 }
 
 export async function buildImage(projectPath: string, tag: string, onLog: (line: string) => void): Promise<DockerBuildResult> {
