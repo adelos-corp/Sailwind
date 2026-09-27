@@ -9,7 +9,6 @@ import {
   getDeploymentById,
   updateDeploymentStatus,
   appendLog,
-  createDeployment,
 } from '../store/deployments.store'
 import {
   upsertAnalysis,
@@ -42,7 +41,7 @@ let _lineCounters: Map<string, number> = new Map()
 function log(deploymentId: string, source: string, content: string): void {
   const n = (_lineCounters.get(deploymentId) ?? 0) + 1
   _lineCounters.set(deploymentId, n)
-  appendLog({ deploymentId, source, lineNumber: n, content })
+  appendLog({ deploymentId, source, lineNumber: n, content }).catch(err => console.error('[store] appendLog failed', err))
   emitLog(deploymentId, n, source, content)
 }
 
@@ -50,10 +49,10 @@ function log(deploymentId: string, source: string, content: string): void {
 
 /** Start the pipeline from PENDING → ANALYZING → ... → AWAITING_APPROVAL */
 export async function startPipeline(deploymentId: string): Promise<void> {
-  const deployment = getDeploymentById(deploymentId)
+  const deployment = await getDeploymentById(deploymentId)
   if (!deployment) throw new Error('Deployment not found')
 
-  const project = getProjectById(deployment.projectId)
+  const project = await getProjectById(deployment.projectId)
   if (!project) throw new Error('Project not found')
 
   const projectPath = await resolveProjectPath(project, deploymentId)
@@ -62,23 +61,23 @@ export async function startPipeline(deploymentId: string): Promise<void> {
 
   try {
     // ── Stage 1: ANALYZING ──────────────────────────────────────────────────
-    transition(deploymentId, 'ANALYZING')
+    await transition(deploymentId, 'ANALYZING')
     emitStage(deploymentId, 'analysis', 'RUNNING')
     log(deploymentId, 'visa', `Analyzing project at ${projectPath}`)
 
     const analysis = analyzeProject(projectPath)
-    upsertAnalysis({ projectId: deployment.projectId, ...analysis })
+    await upsertAnalysis({ projectId: deployment.projectId, ...analysis })
     log(deploymentId, 'visa', `Framework: ${analysis.framework} | Runtime: ${analysis.runtime} | Port: ${analysis.port}`)
     log(deploymentId, 'visa', `Env vars referenced: ${analysis.envVarsNeeded.join(', ') || 'none'}`)
     emitStage(deploymentId, 'analysis', 'DONE')
 
     // ── Stage 2: PRE-CHECKS ─────────────────────────────────────────────────
-    transition(deploymentId, 'CHECKING')
+    await transition(deploymentId, 'CHECKING')
     emitStage(deploymentId, 'pre-checks', 'RUNNING')
     log(deploymentId, 'visa', 'Running parallel pre-checks…')
 
     const { checks, overallStatus } = await runPreChecks(projectPath)
-    savePreCheckReport({ deploymentId, checks, overallStatus })
+    await savePreCheckReport({ deploymentId, checks, overallStatus })
 
     for (const c of checks) {
       log(deploymentId, `check:${c.name}`, `[${c.status}] ${c.message}`)
@@ -87,7 +86,7 @@ export async function startPipeline(deploymentId: string): Promise<void> {
 
     if (overallStatus === 'FAIL') {
       log(deploymentId, 'visa', 'Pre-checks FAILED — deployment cannot proceed.')
-      transition(deploymentId, 'TERMINAL')
+      await transition(deploymentId, 'TERMINAL')
       return
     }
 
@@ -107,19 +106,19 @@ export async function startPipeline(deploymentId: string): Promise<void> {
         `GET http://localhost:${analysis.port + 10000}${analysis.healthPath}`,
       ],
     }
-    savePlan(deploymentId, plan)
+    await savePlan(deploymentId, plan)
     log(deploymentId, 'visa', `Plan: image=${tag} port=${analysis.port} health=${analysis.healthPath}`)
     log(deploymentId, 'visa', `Env vars to inject: ${JSON.stringify(plan.envVars)}`)
     for (const step of plan.steps) log(deploymentId, 'plan', step)
 
     // ── Gate 1: AWAITING_APPROVAL ────────────────────────────────────────────
-    transition(deploymentId, 'AWAITING_APPROVAL')
+    await transition(deploymentId, 'AWAITING_APPROVAL')
     log(deploymentId, 'visa', 'Waiting for human approval before deployment…')
     // Pipeline pauses here — resumed by resumeAfterApproval()
 
   } catch (err) {
     log(deploymentId, 'visa', `Pipeline error: ${err}`)
-    transition(deploymentId, 'FAILED')
+    await transition(deploymentId, 'FAILED')
     emitStage(deploymentId, 'pipeline', 'FAILED')
   }
 }
@@ -136,7 +135,7 @@ export async function resumeAfterDeployApproval(deploymentId: string): Promise<v
     return
   }
 
-  const plan = getPlan(deploymentId)
+  const plan = await getPlan(deploymentId)
   if (!plan) {
     log(deploymentId, 'visa', 'Error: no deployment plan found')
     transition(deploymentId, 'TERMINAL')
@@ -145,7 +144,7 @@ export async function resumeAfterDeployApproval(deploymentId: string): Promise<v
 
   try {
     // ── Stage 4: DEPLOYING ──────────────────────────────────────────────────
-    transition(deploymentId, 'DEPLOYING')
+    await transition(deploymentId, 'DEPLOYING')
     emitStage(deploymentId, 'deploy', 'RUNNING')
     log(deploymentId, 'visa', `Building Docker image: ${plan.imageTag}`)
 
@@ -169,9 +168,9 @@ export async function resumeAfterDeployApproval(deploymentId: string): Promise<v
           .replace(/localhost:\d+/, `localhost:${hostPort}`)
       ),
     }
-    savePlan(deploymentId, runtimePlan)
+    await savePlan(deploymentId, runtimePlan)
     log(deploymentId, 'visa', `Runtime host port allocated: ${hostPort}`)
-    updateDeploymentStatus(deploymentId, 'DEPLOYING', { containerId })
+    await updateDeploymentStatus(deploymentId, 'DEPLOYING', { containerId })
 
     log(deploymentId, 'visa', `Watching container startup (${containerId.slice(0, 12)})…`)
     const { exitCode, logs: containerLogs } = await waitForContainerExit(containerId, CONTAINER_STARTUP_GRACE_MS, line =>
@@ -207,7 +206,7 @@ export async function resumeAfterCorrectionApproval(deploymentId: string): Promi
     return
   }
 
-  const diag = getDiagnosis(deploymentId)
+  const diag = await getDiagnosis(deploymentId)
   if (!diag) {
     log(deploymentId, 'visa', 'Error: no diagnosis found')
     transition(deploymentId, 'TERMINAL')
@@ -221,7 +220,7 @@ export async function resumeAfterCorrectionApproval(deploymentId: string): Promi
     return
   }
 
-  const corrections = countCorrectionAttempts(deploymentId)
+  const corrections = await countCorrectionAttempts(deploymentId)
   if (corrections >= MAX_CORRECTIONS) {
     log(deploymentId, 'visa', `Max correction attempts (${MAX_CORRECTIONS}) reached — marking TERMINAL`)
     transition(deploymentId, 'TERMINAL')
@@ -229,7 +228,7 @@ export async function resumeAfterCorrectionApproval(deploymentId: string): Promi
   }
 
   try {
-    transition(deploymentId, 'CORRECTING')
+    await transition(deploymentId, 'CORRECTING')
     emitStage(deploymentId, 'correction', 'RUNNING')
 
     const correction = JSON.parse(diag.proposedCorrectionJson) as import('./diagnosis').ProposedCorrection
@@ -243,7 +242,7 @@ export async function resumeAfterCorrectionApproval(deploymentId: string): Promi
     }
     log(deploymentId, 'visa', result.description)
 
-    saveCorrectionAttempt({
+    await saveCorrectionAttempt({
       deploymentId,
       diagnosisId: diag.id,
       patchJson: { correction, result },
@@ -276,7 +275,7 @@ export async function resumeAfterCorrectionApproval(deploymentId: string): Promi
           : step
       ),
     }
-    savePlan(deploymentId, correctedPlan)
+    await savePlan(deploymentId, correctedPlan)
 
     // Redeploy with updated image
     log(deploymentId, 'visa', 'Rebuilding image after correction…')
@@ -291,7 +290,7 @@ export async function resumeAfterCorrectionApproval(deploymentId: string): Promi
     emitStage(deploymentId, 'redeploy', 'RUNNING')
 
     // Stop old container if still around
-    const oldDep = getDeploymentById(deploymentId)
+    const oldDep = await getDeploymentById(deploymentId)
     if (oldDep?.containerId) await stopContainer(oldDep.containerId)
 
     const redeploySource = process.env.VERCEL === '1' || process.env.RUNNER_MODE === 'vercel-sandbox'
@@ -312,9 +311,9 @@ export async function resumeAfterCorrectionApproval(deploymentId: string): Promi
           .replace(/localhost:\d+/, `localhost:${hostPort}`)
       ),
     }
-    savePlan(deploymentId, runtimeCorrectedPlan)
+    await savePlan(deploymentId, runtimeCorrectedPlan)
     log(deploymentId, 'visa', `Runtime host port allocated: ${hostPort}`)
-    updateDeploymentStatus(deploymentId, 'DEPLOYING', { containerId })
+    await updateDeploymentStatus(deploymentId, 'DEPLOYING', { containerId })
 
     const { exitCode, logs: containerLogs } = await waitForContainerExit(containerId, CONTAINER_STARTUP_GRACE_MS, line =>
       log(deploymentId, 'container', line)
@@ -345,7 +344,7 @@ async function runVerification(
   containerId: string,
   projectPath: string
 ): Promise<void> {
-  transition(deploymentId, 'VERIFYING')
+  await transition(deploymentId, 'VERIFYING')
   emitStage(deploymentId, 'verification', 'RUNNING')
   const endpoint = await getRunnerEndpoint(plan.imageTag, hostPort, plan.healthPath)
   log(deploymentId, 'visa', `Verifying health at ${endpoint}`)
@@ -353,7 +352,7 @@ async function runVerification(
   const vr = await verifyHealthEndpoint(endpoint, line =>
     log(deploymentId, 'verify', line)
   )
-  saveVerification({
+  await saveVerification({
     deploymentId,
     endpoint: vr.endpoint,
     httpStatus: vr.httpStatus,
@@ -365,7 +364,7 @@ async function runVerification(
   if (vr.healthy) {
     emitStage(deploymentId, 'verification', 'DONE')
     log(deploymentId, 'visa', `✓ Health check passed in ${vr.attempts} attempt(s)`)
-    transition(deploymentId, 'LIVE')
+    await transition(deploymentId, 'LIVE')
   } else {
     emitStage(deploymentId, 'verification', 'FAILED')
     log(deploymentId, 'visa', `✗ Health check failed after ${vr.attempts} attempts`)
@@ -414,7 +413,7 @@ async function runDiagnosis(
   emitStage(deploymentId, 'diagnosis', 'RUNNING')
   log(deploymentId, 'visa', 'Running Granite 4.2 3B diagnosis…')
 
-  const corrections = countCorrectionAttempts(deploymentId)
+  const corrections = await countCorrectionAttempts(deploymentId)
   if (corrections >= MAX_CORRECTIONS) {
     log(deploymentId, 'visa', 'Max corrections reached — no further auto-correction possible')
     emitStage(deploymentId, 'diagnosis', 'DONE', { failureType: 'UNRECOVERABLE', correctable: false })
@@ -436,7 +435,7 @@ async function runDiagnosis(
     ? `Granite unavailable after ${ai.durationMs}ms — ${ai.error ?? 'inference failed'}; deterministic diagnosis fallback used (${ai.modelUsed})`
     : `Granite model: ${ai.modelUsed} responded in ${ai.durationMs}ms`)
 
-  const saved = saveDiagnosis({
+  const saved = await saveDiagnosis({
     deploymentId,
     failureType: result.failureType,
     rootCause: result.rootCause,
@@ -464,7 +463,7 @@ async function runDiagnosis(
   })
 }
 
-function transition(deploymentId: string, status: import('../types').DeploymentStatus): void {
-  updateDeploymentStatus(deploymentId, status)
+async function transition(deploymentId: string, status: import('../types').DeploymentStatus): Promise<void> {
+  await updateDeploymentStatus(deploymentId, status)
   emitStatus(deploymentId, status)
 }
