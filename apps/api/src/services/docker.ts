@@ -7,6 +7,7 @@ export interface DockerRunResult { containerId: string; port: number }
 
 const USE_VERCEL_SANDBOX = process.env.VERCEL === '1' || process.env.RUNNER_MODE === 'vercel-sandbox'
 const PROJECT_DIR = '/vercel/sandbox/project'
+const SANDBOX_TIMEOUT_MS = 40 * 60 * 1000
 
 // Container-based Vercel runtimes do not expose the Sandbox OIDC request context.
 // When explicit access-token credentials are configured, pass them to every
@@ -22,16 +23,28 @@ function sandboxAuth() {
 async function getSandbox(name: string, port?: number): Promise<Sandbox> {
   const auth = sandboxAuth()
   try {
-    return await Sandbox.get({ name, ...auth })
+    const sandbox = await Sandbox.get({ name, ...auth })
+    // Persistent Sandboxes created before we configured an explicit timeout
+    // keep their original session limit. Extend active sessions so a Docker
+    // bootstrap/build is not killed by the 5-minute default.
+    try {
+      await sandbox.extendTimeout(SANDBOX_TIMEOUT_MS)
+    } catch {
+      // A stopped/resuming sandbox may reject extension until its session is
+      // active. The next command will resume it normally.
+    }
+    return sandbox
   } catch {
-    return await Sandbox.create({ name, ...auth, ports: port ? [port] : undefined, timeout: 40 * 60 * 1000 })
+    return await Sandbox.create({
+      name,
+      ...auth,
+      ports: port ? [port] : undefined,
+      timeout: SANDBOX_TIMEOUT_MS,
+    })
   }
 }
 
 async function ensureDocker(sandbox: Sandbox): Promise<void> {
-  // Vercel Sandbox throws a 400 when runCommand is asked to execute a
-  // binary that is not installed, rather than returning a non-zero exit code.
-  // Treat that as "Docker is missing" and bootstrap it explicitly.
   let dockerReady = false
   try {
     const check = await sandbox.runCommand({ cmd: 'docker', args: ['info'] })
@@ -42,22 +55,18 @@ async function ensureDocker(sandbox: Sandbox): Promise<void> {
 
   if (dockerReady) return
 
-  const update = await sandbox.runCommand({
+  // Keep package bootstrap in one remote command. Every extra Sandbox API
+  // round-trip is noticeable during a cold deployment.
+  const bootstrap = await sandbox.runCommand({
     sudo: true,
-    cmd: 'apt-get',
-    args: ['update'],
+    cmd: 'sh',
+    args: [
+      '-lc',
+      'apt-get update -qq && apt-get install -y -qq docker.io',
+    ],
   })
-  if (update.exitCode !== 0) {
-    throw new Error('Docker package index update failed: ' + await update.stderr())
-  }
-
-  const install = await sandbox.runCommand({
-    sudo: true,
-    cmd: 'apt-get',
-    args: ['install', '-y', 'docker.io'],
-  })
-  if (install.exitCode !== 0) {
-    throw new Error('Docker installation failed: ' + await install.stderr())
+  if (bootstrap.exitCode !== 0) {
+    throw new Error('Docker bootstrap failed: ' + await bootstrap.stderr())
   }
 
   const daemon = await sandbox.runCommand({
@@ -75,7 +84,6 @@ async function ensureDocker(sandbox: Sandbox): Promise<void> {
   })
   if (ready.exitCode !== 0) throw new Error('Docker daemon did not become ready')
 }
-
 
 async function prepareSandbox(name: string, port: number): Promise<Sandbox> {
   const sandbox = await getSandbox(name, port)
@@ -168,6 +176,7 @@ export async function runContainer(tag: string, plan: DeploymentPlan, onLog: (li
 
   throw new Error(`No usable Docker host port found in ${preferredPort}-${preferredPort + 50}`)
 }
+
 function splitRunnerContainer(containerId: string) {
   const [sandboxName, dockerId] = containerId.split('::')
   if (!sandboxName || !dockerId) throw new Error('Invalid Sandbox container reference')
@@ -177,21 +186,23 @@ function splitRunnerContainer(containerId: string) {
 export async function waitForContainerExit(containerId: string, timeoutMs: number, onLog: (line: string) => void) {
   const logs: string[] = []
   const startedAt = Date.now()
-  const pollMs = 250
+  const pollMs = 1000
+  const sandbox = USE_VERCEL_SANDBOX
+    ? await getSandbox(splitRunnerContainer(containerId).sandboxName)
+    : null
 
   while (Date.now() - startedAt < timeoutMs) {
     let running = false
     let exitCode = 0
 
     if (USE_VERCEL_SANDBOX) {
-      const { sandboxName, dockerId } = splitRunnerContainer(containerId)
-      const sandbox = await getSandbox(sandboxName)
-      const inspect = await sandbox.runCommand({ cmd: 'docker', args: ['inspect', '--format={{.State.Running}}|{{.State.ExitCode}}', dockerId] })
+      const { dockerId } = splitRunnerContainer(containerId)
+      const inspect = await sandbox!.runCommand({ cmd: 'docker', args: ['inspect', '--format={{.State.Running}}|{{.State.ExitCode}}', dockerId] })
       const [runningText, exitText] = (await inspect.stdout()).trim().split('|')
       running = runningText === 'true'
       exitCode = parseInt(exitText || '0', 10)
       if (!running) {
-        const result = await sandbox.runCommand({ cmd: 'docker', args: ['logs', '--tail=200', dockerId] })
+        const result = await sandbox!.runCommand({ cmd: 'docker', args: ['logs', '--tail=200', dockerId] })
         const output = (await result.stdout()) + '\n' + (await result.stderr())
         output.split('\n').filter(Boolean).forEach(line => { logs.push(line); onLog(line) })
         return { exitCode, logs }
