@@ -1,65 +1,48 @@
 import type { FastifyInstance } from 'fastify'
-import {
-  getDeploymentById,
-  getLogs,
-  updateDeploymentStatus,
-} from '../store/deployments.store'
-import {
-  getPreCheckReport,
-  getPlan,
-  getDiagnosis,
-} from '../store/pipeline.store'
+import { getDeploymentById, getLogs, updateDeploymentStatus } from '../store/deployments.store'
+import { getPreCheckReport, getPlan, getDiagnosis } from '../store/pipeline.store'
 import { registerSseClient, unregisterSseClient } from '../services/sse'
 import {
   startPipeline,
   resumeAfterDeployApproval,
   resumeAfterCorrectionApproval,
 } from '../services/pipeline'
-import { getDb } from '../store/db'
+import { insert } from '../store/supabase'
 import { randomUUID } from 'crypto'
 
 export async function deploymentRoutes(app: FastifyInstance) {
-  // Get deployment details
   app.get<{ Params: { id: string } }>('/deployments/:id', async (request, reply) => {
-    const d = getDeploymentById(request.params.id)
+    const d = await getDeploymentById(request.params.id)
     if (!d) return reply.status(404).send({ error: 'Deployment not found' })
     return { deployment: d }
   })
 
-  // Get deployment logs
   app.get<{ Params: { id: string } }>('/deployments/:id/logs', async (request, reply) => {
-    const d = getDeploymentById(request.params.id)
+    const d = await getDeploymentById(request.params.id)
     if (!d) return reply.status(404).send({ error: 'Deployment not found' })
-    return { deploymentId: request.params.id, logs: getLogs(request.params.id) }
+    return { deploymentId: request.params.id, logs: await getLogs(request.params.id) }
   })
 
-  // Get pre-check report
   app.get<{ Params: { id: string } }>('/deployments/:id/checks', async (request, reply) => {
-    const d = getDeploymentById(request.params.id)
+    const d = await getDeploymentById(request.params.id)
     if (!d) return reply.status(404).send({ error: 'Deployment not found' })
-    const report = getPreCheckReport(request.params.id)
-    return { deploymentId: request.params.id, report }
+    return { deploymentId: request.params.id, report: await getPreCheckReport(request.params.id) }
   })
 
-  // Get deployment plan
   app.get<{ Params: { id: string } }>('/deployments/:id/plan', async (request, reply) => {
-    const d = getDeploymentById(request.params.id)
+    const d = await getDeploymentById(request.params.id)
     if (!d) return reply.status(404).send({ error: 'Deployment not found' })
-    const plan = getPlan(request.params.id)
-    return { deploymentId: request.params.id, plan }
+    return { deploymentId: request.params.id, plan: await getPlan(request.params.id) }
   })
 
-  // Get diagnosis
   app.get<{ Params: { id: string } }>('/deployments/:id/diagnosis', async (request, reply) => {
-    const d = getDeploymentById(request.params.id)
+    const d = await getDeploymentById(request.params.id)
     if (!d) return reply.status(404).send({ error: 'Deployment not found' })
-    const diagnosis = getDiagnosis(request.params.id)
-    return { deploymentId: request.params.id, diagnosis }
+    return { deploymentId: request.params.id, diagnosis: await getDiagnosis(request.params.id) }
   })
 
-  // SSE stream for live deployment events
   app.get<{ Params: { id: string } }>('/deployments/:id/events', async (request, reply) => {
-    const d = getDeploymentById(request.params.id)
+    const d = await getDeploymentById(request.params.id)
     if (!d) return reply.status(404).send({ error: 'Deployment not found' })
 
     reply.raw.setHeader('Content-Type', 'text/event-stream')
@@ -67,7 +50,6 @@ export async function deploymentRoutes(app: FastifyInstance) {
     reply.raw.setHeader('Connection', 'keep-alive')
     reply.raw.setHeader('Access-Control-Allow-Origin', '*')
 
-    // Send current status immediately
     reply.raw.write(`data: ${JSON.stringify({
       type: 'status',
       deploymentId: request.params.id,
@@ -83,47 +65,46 @@ export async function deploymentRoutes(app: FastifyInstance) {
       unregisterSseClient(request.params.id, reply.raw)
     })
 
-    await new Promise(() => {}) // hold connection
+    await new Promise(() => {})
   })
 
-  // Trigger pipeline run (fire-and-forget)
   app.post<{ Params: { id: string } }>('/deployments/:id/run', async (request, reply) => {
-    const d = getDeploymentById(request.params.id)
+    const d = await getDeploymentById(request.params.id)
     if (!d) return reply.status(404).send({ error: 'Deployment not found' })
     if (d.status !== 'PENDING') {
       return reply.status(409).send({ error: `Cannot run from status ${d.status}` })
     }
-    // Fire and forget — don't await
     setImmediate(() => startPipeline(request.params.id).catch(console.error))
     return { started: true }
   })
 
-  // Submit approval
   app.post<{
     Params: { id: string }
     Body: { gate: 'DEPLOY' | 'CORRECT'; decision: 'APPROVED' | 'REJECTED'; notes?: string }
   }>('/deployments/:id/approve', async (request, reply) => {
-    const d = getDeploymentById(request.params.id)
+    const d = await getDeploymentById(request.params.id)
     if (!d) return reply.status(404).send({ error: 'Deployment not found' })
 
     const { gate, decision, notes } = request.body ?? {}
     if (!gate || !decision) return reply.status(400).send({ error: 'gate and decision are required' })
 
-    const db = getDb()
     const approvalId = randomUUID()
-    db.prepare(
-      `INSERT INTO approvals (id, deployment_id, gate, decision, user_notes) VALUES (?, ?, ?, ?, ?)`
-    ).run(approvalId, request.params.id, gate, decision, notes ?? null)
+    await insert('visa_approvals', {
+      id: approvalId,
+      deployment_id: request.params.id,
+      gate,
+      decision,
+      user_notes: notes ?? null,
+    })
 
-    // Resume pipeline based on decision
     if (decision === 'REJECTED') {
-      updateDeploymentStatus(request.params.id, 'TERMINAL')
+      await updateDeploymentStatus(request.params.id, 'TERMINAL')
       return { approvalId, gate, decision }
     }
 
-    if (gate === 'DEPLOY' && decision === 'APPROVED') {
+    if (gate === 'DEPLOY') {
       setImmediate(() => resumeAfterDeployApproval(request.params.id).catch(console.error))
-    } else if (gate === 'CORRECT' && decision === 'APPROVED') {
+    } else if (gate === 'CORRECT') {
       setImmediate(() => resumeAfterCorrectionApproval(request.params.id).catch(console.error))
     }
 
