@@ -1,6 +1,5 @@
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
-import { runMigrations } from './store/migrations'
 import { projectRoutes } from './routes/projects'
 import { deploymentRoutes } from './routes/deployments'
 
@@ -8,9 +7,6 @@ const PORT = parseInt(process.env.PORT ?? '3001', 10)
 const HOST = process.env.HOST ?? '0.0.0.0'
 
 async function main() {
-  // Run DB migrations on startup
-  runMigrations()
-
   const app = Fastify({ logger: { level: 'info' } })
 
   // CORS — allow UI dev server
@@ -30,7 +26,7 @@ async function main() {
   app.get('/health', health)
   app.get('/api/health', health)
 
-  // Routes
+  // Routes — persistent control-plane state lives in Supabase
   await app.register(projectRoutes)
   await app.register(deploymentRoutes)
 
