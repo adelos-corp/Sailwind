@@ -7,21 +7,17 @@ import {
 import { startPipeline } from '../services/pipeline'
 
 export async function projectRoutes(app: FastifyInstance) {
-  // List all projects
   app.get('/projects', async () => {
-    return { projects: listProjects() }
+    return { projects: await listProjects() }
   })
 
-  // Create a project
   app.post<{
     Body: { name?: string; gitUrl?: string; localPath?: string }
   }>('/projects', async (request, reply) => {
     const { name, gitUrl, localPath } = request.body ?? {}
 
     if (!gitUrl && !localPath) {
-      return reply
-        .status(400)
-        .send({ error: 'Either gitUrl or localPath is required' })
+      return reply.status(400).send({ error: 'Either gitUrl or localPath is required' })
     }
 
     const derivedName =
@@ -30,46 +26,38 @@ export async function projectRoutes(app: FastifyInstance) {
         ? gitUrl.split('/').pop()?.replace('.git', '') ?? 'project'
         : (localPath?.split('/').pop() ?? 'project'))
 
-    const project = createProject({ name: derivedName, gitUrl, localPath })
+    const project = await createProject({ name: derivedName, gitUrl, localPath })
     return reply.status(201).send({ project })
   })
 
-  // Get a single project
   app.get<{ Params: { id: string } }>('/projects/:id', async (request, reply) => {
-    const project = getProjectById(request.params.id)
+    const project = await getProjectById(request.params.id)
     if (!project) return reply.status(404).send({ error: 'Project not found' })
     return { project }
   })
 
-  // List deployments for a project
   app.get<{ Params: { id: string } }>(
     '/projects/:id/deployments',
     async (request, reply) => {
-      const project = getProjectById(request.params.id)
+      const project = await getProjectById(request.params.id)
       if (!project) return reply.status(404).send({ error: 'Project not found' })
-      const deployments = listDeploymentsByProject(request.params.id)
-      return { deployments }
+      return { deployments: await listDeploymentsByProject(request.params.id) }
     }
   )
 
-  // Initiate a new deployment
   app.post<{ Params: { id: string } }>(
     '/projects/:id/deployments',
     async (request, reply) => {
-      const project = getProjectById(request.params.id)
+      const project = await getProjectById(request.params.id)
       if (!project) return reply.status(404).send({ error: 'Project not found' })
 
-      const existing = listDeploymentsByProject(request.params.id)
-      const attemptNumber = existing.length + 1
-
-      const deployment = createDeployment({
+      const existing = await listDeploymentsByProject(request.params.id)
+      const deployment = await createDeployment({
         projectId: request.params.id,
-        attemptNumber,
+        attemptNumber: existing.length + 1,
       })
 
-      // Auto-start the pipeline immediately
       setImmediate(() => startPipeline(deployment.id).catch(console.error))
-
       return reply.status(201).send({ deployment })
     }
   )
