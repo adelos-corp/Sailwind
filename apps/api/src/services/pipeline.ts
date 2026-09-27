@@ -125,20 +125,20 @@ export async function startPipeline(deploymentId: string): Promise<void> {
 
 /** Resume after Gate 1 approval — runs docker build+run, then monitor */
 export async function resumeAfterDeployApproval(deploymentId: string): Promise<void> {
-  const deployment = getDeploymentById(deploymentId)
+  const deployment = await getDeploymentById(deploymentId)
   if (!deployment) return
 
-  const project = getProjectById(deployment.projectId)
+  const project = await getProjectById(deployment.projectId)
   if (!project?.localPath && !project?.gitUrl) {
     log(deploymentId, 'visa', 'Error: project source is not set')
-    transition(deploymentId, 'TERMINAL')
+    await transition(deploymentId, 'TERMINAL')
     return
   }
 
   const plan = await getPlan(deploymentId)
   if (!plan) {
     log(deploymentId, 'visa', 'Error: no deployment plan found')
-    transition(deploymentId, 'TERMINAL')
+    await transition(deploymentId, 'TERMINAL')
     return
   }
 
@@ -189,41 +189,41 @@ export async function resumeAfterDeployApproval(deploymentId: string): Promise<v
 
   } catch (err) {
     log(deploymentId, 'visa', `Deploy error: ${err}`)
-    transition(deploymentId, 'FAILED')
+    await transition(deploymentId, 'FAILED')
     emitStage(deploymentId, 'deploy', 'FAILED')
   }
 }
 
 /** Resume after Gate 2 (correction approval) — apply fix + redeploy */
 export async function resumeAfterCorrectionApproval(deploymentId: string): Promise<void> {
-  const deployment = getDeploymentById(deploymentId)
+  const deployment = await getDeploymentById(deploymentId)
   if (!deployment) return
 
-  const project = getProjectById(deployment.projectId)
+  const project = await getProjectById(deployment.projectId)
   if (!project?.localPath && !project?.gitUrl) {
     log(deploymentId, 'visa', 'Error: project source is not set')
-    transition(deploymentId, 'TERMINAL')
+    await transition(deploymentId, 'TERMINAL')
     return
   }
 
   const diag = await getDiagnosis(deploymentId)
   if (!diag) {
     log(deploymentId, 'visa', 'Error: no diagnosis found')
-    transition(deploymentId, 'TERMINAL')
+    await transition(deploymentId, 'TERMINAL')
     return
   }
 
-  const plan = getPlan(deploymentId)
+  const plan = await getPlan(deploymentId)
   if (!plan) {
     log(deploymentId, 'visa', 'Error: no plan found')
-    transition(deploymentId, 'TERMINAL')
+    await transition(deploymentId, 'TERMINAL')
     return
   }
 
   const corrections = await countCorrectionAttempts(deploymentId)
   if (corrections >= MAX_CORRECTIONS) {
     log(deploymentId, 'visa', `Max correction attempts (${MAX_CORRECTIONS}) reached — marking TERMINAL`)
-    transition(deploymentId, 'TERMINAL')
+    await transition(deploymentId, 'TERMINAL')
     return
   }
 
@@ -252,7 +252,7 @@ export async function resumeAfterCorrectionApproval(deploymentId: string): Promi
 
     if (!result.applied) {
       log(deploymentId, 'visa', 'Correction could not be applied — marking TERMINAL')
-      transition(deploymentId, 'TERMINAL')
+      await transition(deploymentId, 'TERMINAL')
       return
     }
 
@@ -286,7 +286,7 @@ export async function resumeAfterCorrectionApproval(deploymentId: string): Promi
         `Redeploy configuration: injecting approved ${correction.envVar} runtime value`
       )
     }
-    transition(deploymentId, 'DEPLOYING')
+    await transition(deploymentId, 'DEPLOYING')
     emitStage(deploymentId, 'redeploy', 'RUNNING')
 
     // Stop old container if still around
@@ -322,7 +322,7 @@ export async function resumeAfterCorrectionApproval(deploymentId: string): Promi
     if (exitCode !== 0) {
       emitStage(deploymentId, 'redeploy', 'FAILED')
       log(deploymentId, 'visa', `Redeployment failed (exit ${exitCode}) — marking TERMINAL`)
-      transition(deploymentId, 'TERMINAL')
+      await transition(deploymentId, 'TERMINAL')
       return
     }
 
@@ -331,7 +331,7 @@ export async function resumeAfterCorrectionApproval(deploymentId: string): Promi
 
   } catch (err) {
     log(deploymentId, 'visa', `Correction error: ${err}`)
-    transition(deploymentId, 'TERMINAL')
+    await transition(deploymentId, 'TERMINAL')
   }
 }
 
@@ -409,7 +409,7 @@ async function runDiagnosis(
   projectPath: string,
   plan: DeploymentPlan
 ): Promise<void> {
-  transition(deploymentId, 'FAILED')
+  await transition(deploymentId, 'FAILED')
   emitStage(deploymentId, 'diagnosis', 'RUNNING')
   log(deploymentId, 'visa', 'Running Granite 4.2 3B diagnosis…')
 
