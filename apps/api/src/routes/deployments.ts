@@ -9,6 +9,7 @@ import {
 } from '../services/pipeline'
 import { insert } from '../store/supabase'
 import { randomUUID } from 'crypto'
+import { waitUntil } from '@vercel/functions'
 
 export async function deploymentRoutes(app: FastifyInstance) {
   app.get<{ Params: { id: string } }>('/deployments/:id', async (request, reply) => {
@@ -74,7 +75,7 @@ export async function deploymentRoutes(app: FastifyInstance) {
     if (d.status !== 'PENDING') {
       return reply.status(409).send({ error: `Cannot run from status ${d.status}` })
     }
-    setImmediate(() => startPipeline(request.params.id).catch(console.error))
+    waitUntil(startPipeline(request.params.id).catch(console.error))
     return { started: true }
   })
 
@@ -102,15 +103,18 @@ export async function deploymentRoutes(app: FastifyInstance) {
       return { approvalId, gate, decision }
     }
 
-    // Keep the approval request alive while the consequential pipeline work runs.
-    // Vercel Functions can terminate fire-and-forget work immediately after the
-    // response, which previously left approved deployments stuck at DEPLOY.
-    if (gate === 'DEPLOY') {
-      await resumeAfterDeployApproval(request.params.id)
-    } else if (gate === 'CORRECT') {
-      await resumeAfterCorrectionApproval(request.params.id)
-    }
+    // Approvals must return immediately. The deployment work can involve
+    // Sandbox bootstrapping, Docker setup, image builds, and health checks,
+    // which can outlive a normal Vercel request. waitUntil keeps the task
+    // attached to the function lifecycle without holding the HTTP response.
+    const resume = gate === 'DEPLOY'
+      ? resumeAfterDeployApproval(request.params.id)
+      : resumeAfterCorrectionApproval(request.params.id)
 
-    return { approvalId, gate, decision }
+    waitUntil(resume.catch(err => {
+      console.error(`[pipeline] ${gate} approval failed`, err)
+    }))
+
+    return { approvalId, gate, decision, started: true }
   })
 }
