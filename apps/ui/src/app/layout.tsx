@@ -5,7 +5,7 @@ import { Footer } from '@/components/Footer'
 import { WorkspacePreferencesInit } from '@/components/WorkspacePreferencesInit'
 
 export const metadata: Metadata = {
-  title: 'VISA — Web Deployment Platform',
+  title: 'Sailwind — Web Deployment Platform',
   description: 'Fast, Approved, Auto-Correctible Web Deployment Platform powered by IBM Bob 2.0',
 }
 
