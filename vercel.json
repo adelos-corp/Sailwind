@@ -9,7 +9,7 @@
           "type": "service",
           "service": "api",
           "format": "url",
-          "env": "VISA_API_INTERNAL_URL"
+          "env": "Sailwind_API_INTERNAL_URL"
         }
       ]
     },
