@@ -33,11 +33,11 @@ export async function diagnoseWithGranite(input: {
 
     const logs = input.containerLogs.join('\n').slice(-5000)
     const prompt = [
-      'Diagnose this Docker deployment failure for VISA.',
+      'Diagnose this Docker deployment failure for Sailwind.',
       'Return ONLY compact JSON matching this schema:',
       '{"failureType":"CORRECTABLE|NEEDS_HUMAN|UNRECOVERABLE","rootCause":"string","confidence":0,"rationale":"string","correctionType":"ADD_ENV_VAR|MANUAL","envVar":"optional","envValue":"optional"}',
       'If a missing environment variable caused the crash, correctionType MUST be ADD_ENV_VAR and you MUST provide envVar and envValue. Do not use FIX_DOCKERFILE.',
-      'For this demo, if APP_SECRET is missing, use envVar="APP_SECRET" and envValue="visa-demo-secret".',
+      'For this demo, if APP_SECRET is missing, use envVar="APP_SECRET" and envValue="sailwind-demo-secret".',
       'Only recommend a bounded Dockerfile correction. Never propose shell commands or arbitrary code changes.',
       '',
       'LOGS:',
@@ -69,7 +69,7 @@ export async function diagnoseWithGranite(input: {
         messages: [
           {
             role: 'system',
-            content: 'You are VISA deployment diagnosis. Be concise, deterministic, and return JSON only.',
+            content: 'You are Sailwind deployment diagnosis. Be concise, deterministic, and return JSON only.',
           },
           { role: 'user', content: prompt },
         ],
