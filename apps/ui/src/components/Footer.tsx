@@ -6,7 +6,7 @@ export function Footer() {
       <div className="mx-auto flex max-w-6xl flex-col gap-7 px-4 py-10 sm:px-6 lg:flex-row lg:items-end lg:justify-between lg:px-8">
         <div>
           <p className="text-xs font-semibold text-slate-300">Sailwind</p>
-          <p className="mt-1 text-[11px] text-slate-600">Fast · Approved · Auto-Correctible · Verified</p>
+          <p className="mt-1 text-[11px] text-slate-600">Part of Codelos · ADELOS Corp.</p>
         </div>
 
         <div className="flex flex-wrap gap-x-5 gap-y-2 text-[11px] text-slate-500">
