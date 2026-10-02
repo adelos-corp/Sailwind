@@ -28,7 +28,7 @@ export default function Home() {
               FAST · APPROVED · AUTO-CORRECTIBLE
             </p>
             <h1 className="text-[clamp(5rem,18vw,13rem)] font-semibold leading-[0.78] tracking-[-0.085em] text-white">
-              VISA
+              Sailwind
             </h1>
             <p className="mx-auto mt-10 max-w-2xl text-[clamp(1.35rem,3vw,2.35rem)] font-medium leading-[1.12] tracking-[-0.035em] text-slate-200">
               Deployment, without the uncertainty.
@@ -42,7 +42,7 @@ export default function Home() {
                 Deploy an application
               </Link>
               <Link href="/about" className="rounded-full border border-white/15 bg-white/[0.04] px-6 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.08]">
-                Explore VISA
+                Explore Sailwind
               </Link>
             </div>
           </div>
@@ -84,14 +84,14 @@ export default function Home() {
                 Nothing ships without your approval.
               </h2>
               <p className="mt-8 max-w-xl text-base leading-7 text-slate-500">
-                VISA turns the proposed deployment into a decision, not a hidden side effect. Review what is about to happen before consequential execution begins.
+                Sailwind turns the proposed deployment into a decision, not a hidden side effect. Review what is about to happen before consequential execution begins.
               </p>
             </div>
 
             <div className="rounded-[2rem] border border-white/10 bg-white/[0.035] p-5 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-7">
               <div className="flex items-center justify-between border-b border-white/10 pb-5">
                 <div>
-                  <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-slate-600">VISA / DEPLOYMENT PLAN</p>
+                  <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-slate-600">Sailwind / DEPLOYMENT PLAN</p>
                   <p className="mt-2 text-lg font-medium text-white">Production candidate</p>
                 </div>
                 <span className="rounded-full border border-white/10 px-3 py-1 text-[10px] text-slate-500">Awaiting approval</span>
@@ -125,7 +125,7 @@ export default function Home() {
                 Failure isn&apos;t the end.
               </h2>
               <p className="max-w-xl text-base leading-7 text-slate-500">
-                When a deployment fails, VISA closes the loop. It reads the failure signal, diagnoses bounded corrective actions, keeps approval in the flow, and returns to verification.
+                When a deployment fails, Sailwind closes the loop. It reads the failure signal, diagnoses bounded corrective actions, keeps approval in the flow, and returns to verification.
               </p>
             </div>
 
@@ -153,7 +153,7 @@ export default function Home() {
             </h2>
             <div className="mt-16 flex flex-col justify-between gap-8 border-t border-white/10 pt-8 sm:flex-row sm:items-end">
               <p className="max-w-xl text-base leading-7 text-slate-500">
-                A deployment is not finished because a command returned successfully. VISA checks the running application and closes the loop on the state that actually matters.
+                A deployment is not finished because a command returned successfully. Sailwind checks the running application and closes the loop on the state that actually matters.
               </p>
               <Link href="/projects" className="shrink-0 text-sm font-medium text-slate-300 transition hover:text-white">
                 View deployment activity →
@@ -163,7 +163,7 @@ export default function Home() {
         </section>
 
         <section className="border-t border-white/10 px-6 py-36 text-center sm:py-52">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-600">VISA</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-600">Sailwind</p>
           <h2 className="mx-auto mt-7 max-w-5xl text-[clamp(4rem,10vw,9rem)] font-semibold leading-[0.82] tracking-[-0.08em]">
             Ship with
             <br />
