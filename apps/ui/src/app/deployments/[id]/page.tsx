@@ -100,8 +100,8 @@ export default function DeploymentPage() {
     } finally { setApproving(false) }
   }, [id, deployment])
 
-  if (error) return <PageShell><div className="visa-card p-10 text-center"><div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-rose-50 text-rose-600">!</div><p className="text-sm font-semibold text-slate-800">{error}</p><button onClick={() => router.push('/')} className="mt-4 text-xs font-semibold text-blue-600">← Back to control plane</button></div></PageShell>
-  if (!deployment) return <PageShell><div className="visa-card p-12 text-center"><div className="mx-auto mb-3 h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" /><p className="text-xs text-slate-500">Loading deployment telemetry…</p></div></PageShell>
+  if (error) return <PageShell><div className="sailwind-card p-10 text-center"><div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-rose-50 text-rose-600">!</div><p className="text-sm font-semibold text-slate-800">{error}</p><button onClick={() => router.push('/')} className="mt-4 text-xs font-semibold text-blue-600">← Back to control plane</button></div></PageShell>
+  if (!deployment) return <PageShell><div className="sailwind-card p-12 text-center"><div className="mx-auto mb-3 h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" /><p className="text-xs text-slate-500">Loading deployment telemetry…</p></div></PageShell>
 
   const statusLabel = STATUS_LABEL[deployment.status] ?? deployment.status
   const statusColor = STATUS_COLOR[deployment.status] ?? STATUS_COLOR.PENDING
@@ -121,15 +121,15 @@ export default function DeploymentPage() {
         <span className="font-medium text-slate-700">Deployment {id.slice(0, 8)}</span>
       </div>
 
-      <section className="visa-card mb-4 overflow-hidden">
+      <section className="sailwind-card mb-4 overflow-hidden">
         <div className="flex flex-col justify-between gap-5 px-6 py-6 sm:flex-row sm:items-start lg:px-7">
           <div>
             <div className="flex items-center gap-2">
-              <p className="visa-eyebrow">Deployment record</p>
+              <p className="sailwind-eyebrow">Deployment record</p>
               <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-500">#{deployment.attemptNumber}</span>
             </div>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Deployment {id.slice(0, 8)}</h1>
-            <p className="visa-mono mt-1 text-[10px] text-slate-400">{deployment.id}</p>
+            <p className="sailwind-mono mt-1 text-[10px] text-slate-400">{deployment.id}</p>
           </div>
           <div className="text-left sm:text-right">
             <span className={`inline-flex rounded-full border px-3 py-1.5 text-xs font-semibold ${statusColor}`}>
@@ -146,7 +146,7 @@ export default function DeploymentPage() {
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm">✓</div>
                 <div><p className="text-sm font-semibold text-emerald-900">Deployment verified and live</p><p className="text-xs text-emerald-700">Health check passed. The container is running and serving traffic.</p></div>
               </div>
-              {deployment.containerId && <div className="text-[10px] text-emerald-700 sm:text-right"><p className="font-semibold uppercase tracking-wider">Container</p><p className="visa-mono mt-0.5">{deployment.containerId.slice(0, 12)}</p></div>}
+              {deployment.containerId && <div className="text-[10px] text-emerald-700 sm:text-right"><p className="font-semibold uppercase tracking-wider">Container</p><p className="sailwind-mono mt-0.5">{deployment.containerId.slice(0, 12)}</p></div>}
             </div>
           </div>
         )}
@@ -155,7 +155,7 @@ export default function DeploymentPage() {
       <StageTracker stages={stages} status={deployment.status} />
 
       {(graniteThinking || stages.diagnosis?.stageStatus === 'DONE') && (
-        <section className="visa-card mb-4 px-5 py-4">
+        <section className="sailwind-card mb-4 px-5 py-4">
           <ThoughtLine
             working={graniteThinking}
             steps={['Reading deployment logs', 'Analyzing the failure', 'Preparing a bounded correction']}
@@ -179,7 +179,7 @@ export default function DeploymentPage() {
       <div className="grid gap-4 lg:grid-cols-[1.25fr_.75fr]">
         <div className="space-y-4">
           {checks && checks.length > 0 && (
-            <section className="visa-card p-5">
+            <section className="sailwind-card p-5">
               <SectionTitle eyebrow="Safety checks" title="Pre-deployment assessment" />
               <div className="mt-5 divide-y divide-slate-100">
                 {checks.map(c => (
@@ -193,7 +193,7 @@ export default function DeploymentPage() {
           )}
 
           {plan && (
-            <section className="visa-card overflow-hidden">
+            <section className="sailwind-card overflow-hidden">
               <div className="p-5">
                 <SectionTitle eyebrow="Execution plan" title="Deployment plan" />
                 <div className="mt-5 grid grid-cols-3 gap-3">
@@ -203,18 +203,18 @@ export default function DeploymentPage() {
                 </div>
               </div>
               <div className="border-t border-slate-100 bg-slate-950 px-5 py-4">
-                {plan.steps.map((s, i) => <div key={i} className="visa-mono flex gap-3 text-[10px] leading-6 text-slate-300"><span className="text-slate-600">{String(i + 1).padStart(2, '0')}</span><span className="break-all">{s}</span></div>)}
+                {plan.steps.map((s, i) => <div key={i} className="sailwind-mono flex gap-3 text-[10px] leading-6 text-slate-300"><span className="text-slate-600">{String(i + 1).padStart(2, '0')}</span><span className="break-all">{s}</span></div>)}
               </div>
             </section>
           )}
 
           {deployment.status === 'AWAITING_APPROVAL' && (
-            <ApprovalCard title="Approval required" eyebrow="Gate 01 · Deploy" tone="amber" copy="Analysis and safety checks are complete. Review the execution plan before allowing VISA to perform the deployment." approving={approving} approveLabel="Approve deployment" onApprove={() => handleApproval('DEPLOY', 'APPROVED')} onReject={() => handleApproval('DEPLOY', 'REJECTED')} />
+            <ApprovalCard title="Approval required" eyebrow="Gate 01 · Deploy" tone="amber" copy="Analysis and safety checks are complete. Review the execution plan before allowing Sailwind to perform the deployment." approving={approving} approveLabel="Approve deployment" onApprove={() => handleApproval('DEPLOY', 'APPROVED')} onReject={() => handleApproval('DEPLOY', 'REJECTED')} />
           )}
 
           {deployment.status === 'FAILED' && diagnosis && (
             <section className="rounded-2xl border border-orange-200 bg-orange-50/70 p-5">
-              <p className="visa-eyebrow text-orange-700">Gate 02 · Recovery decision</p>
+              <p className="sailwind-eyebrow text-orange-700">Gate 02 · Recovery decision</p>
               <h2 className="mt-1 text-lg font-semibold tracking-tight text-orange-950">Failure diagnosed</h2>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <Metric label="Classification" value={diagnosis.failureType} />
@@ -224,7 +224,7 @@ export default function DeploymentPage() {
                 <p><span className="font-semibold">Root cause:</span> {diagnosis.rootCause}</p>
                 <p><span className="font-semibold">Rationale:</span> {diagnosis.rationale}</p>
               </div>
-              {diagnosisCorrection?.diff && <pre className="visa-mono mt-4 max-h-64 overflow-auto rounded-xl bg-slate-950 p-4 text-[10px] leading-5 text-slate-300">{diagnosisCorrection.diff}</pre>}
+              {diagnosisCorrection?.diff && <pre className="sailwind-mono mt-4 max-h-64 overflow-auto rounded-xl bg-slate-950 p-4 text-[10px] leading-5 text-slate-300">{diagnosisCorrection.diff}</pre>}
               {diagnosis.failureType === 'CORRECTABLE' ? (
                 <div className="mt-5 flex flex-wrap gap-2">
                   <button disabled={approving} onClick={() => handleApproval('CORRECT', 'APPROVED')} className="rounded-lg bg-slate-950 px-4 py-2.5 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-50">{approving ? 'Submitting…' : 'Approve auto-correction'}</button>
@@ -236,13 +236,13 @@ export default function DeploymentPage() {
         </div>
 
         <aside className="space-y-4">
-          <section className="visa-card overflow-hidden">
+          <section className="sailwind-card overflow-hidden">
             <div className="border-b border-slate-100 px-5 py-4">
-              <div className="flex items-center justify-between"><div><p className="visa-eyebrow">Runtime telemetry</p><h2 className="mt-1 text-sm font-semibold text-slate-900">Deployment logs</h2></div><span className="rounded-full bg-slate-100 px-2 py-1 text-[9px] font-semibold text-slate-500">{logs.length} events</span></div>
+              <div className="flex items-center justify-between"><div><p className="sailwind-eyebrow">Runtime telemetry</p><h2 className="mt-1 text-sm font-semibold text-slate-900">Deployment logs</h2></div><span className="rounded-full bg-slate-100 px-2 py-1 text-[9px] font-semibold text-slate-500">{logs.length} events</span></div>
             </div>
             <div className="h-[34rem] overflow-y-auto bg-slate-950 p-4">
               {logs.length === 0 ? <p className="text-[10px] text-slate-600">Waiting for telemetry…</p> : logs.map(log => (
-                <div key={log.lineNumber} className="visa-mono flex gap-2 text-[9px] leading-5">
+                <div key={log.lineNumber} className="sailwind-mono flex gap-2 text-[9px] leading-5">
                   <span className="w-5 shrink-0 text-right text-slate-700">{log.lineNumber}</span>
                   <span className={`shrink-0 ${log.source.startsWith('check') ? 'text-amber-400' : log.source === 'diagnosis' ? 'text-orange-400' : log.source === 'verify' ? 'text-cyan-400' : 'text-slate-500'}`}>[{log.source}]</span>
                   <span className="break-all text-slate-300">{log.content}</span>
@@ -258,15 +258,15 @@ export default function DeploymentPage() {
 }
 
 function SectionTitle({ eyebrow, title }: { eyebrow: string; title: string }) {
-  return <div><p className="visa-eyebrow">{eyebrow}</p><h2 className="mt-1 text-sm font-semibold tracking-tight text-slate-900">{title}</h2></div>
+  return <div><p className="sailwind-eyebrow">{eyebrow}</p><h2 className="mt-1 text-sm font-semibold tracking-tight text-slate-900">{title}</h2></div>
 }
 
 function Metric({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
-  return <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3"><p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">{label}</p><p className={`mt-1 truncate text-xs font-semibold text-slate-800 ${mono ? 'visa-mono' : ''}`}>{value}</p></div>
+  return <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3"><p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">{label}</p><p className={`mt-1 truncate text-xs font-semibold text-slate-800 ${mono ? 'sailwind-mono' : ''}`}>{value}</p></div>
 }
 
 function ApprovalCard({ title, eyebrow, tone, copy, approving, approveLabel, onApprove, onReject }: { title: string; eyebrow: string; tone: 'amber'; copy: string; approving: boolean; approveLabel: string; onApprove: () => void; onReject: () => void }) {
-  return <section className="rounded-2xl border border-amber-200 bg-amber-50/70 p-5"><p className="visa-eyebrow text-amber-700">{eyebrow}</p><h2 className="mt-1 text-lg font-semibold tracking-tight text-amber-950">{title}</h2><p className="mt-2 max-w-2xl text-xs leading-5 text-amber-800">{copy}</p><div className="mt-5 flex flex-wrap gap-2"><button disabled={approving} onClick={onApprove} className="rounded-lg bg-slate-950 px-4 py-2.5 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-50">{approving ? 'Submitting…' : `✓ ${approveLabel}`}</button><button disabled={approving} onClick={onReject} className="rounded-lg border border-amber-200 bg-white px-4 py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50">Reject · Terminate</button></div></section>
+  return <section className="rounded-2xl border border-amber-200 bg-amber-50/70 p-5"><p className="sailwind-eyebrow text-amber-700">{eyebrow}</p><h2 className="mt-1 text-lg font-semibold tracking-tight text-amber-950">{title}</h2><p className="mt-2 max-w-2xl text-xs leading-5 text-amber-800">{copy}</p><div className="mt-5 flex flex-wrap gap-2"><button disabled={approving} onClick={onApprove} className="rounded-lg bg-slate-950 px-4 py-2.5 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-50">{approving ? 'Submitting…' : `✓ ${approveLabel}`}</button><button disabled={approving} onClick={onReject} className="rounded-lg border border-amber-200 bg-white px-4 py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50">Reject · Terminate</button></div></section>
 }
 
 const PIPELINE_STAGES = [
@@ -283,7 +283,7 @@ function StageTracker({ stages, status }: { stages: Record<string, StageUpdate>;
   const order = ['analysis', 'pre-checks', 'deploy', 'verification', 'diagnosis', 'correction', 'redeploy']
   const statusIndex: Record<string, number> = { ANALYZING: 0, CHECKING: 1, AWAITING_APPROVAL: 1, DEPLOYING: 2, VERIFYING: 3, FAILED: 4, CORRECTING: 5, LIVE: 6, TERMINAL: 6 }
   const current = statusIndex[status] ?? -1
-  return <div className="visa-card mb-4 overflow-hidden"><div className="flex items-center overflow-x-auto px-5 py-4"><div className="flex min-w-max items-center">{PIPELINE_STAGES.map((s, i) => {
+  return <div className="sailwind-card mb-4 overflow-hidden"><div className="flex items-center overflow-x-auto px-5 py-4"><div className="flex min-w-max items-center">{PIPELINE_STAGES.map((s, i) => {
     const update = stages[s.key]
     const isFailed = update?.stageStatus === 'FAILED'
     const isDone = update?.stageStatus === 'DONE' || i < current || (status === 'LIVE' && i === 6)
@@ -294,5 +294,5 @@ function StageTracker({ stages, status }: { stages: Record<string, StageUpdate>;
 }
 
 function PageShell({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen"><main className="visa-grid min-h-screen px-6 pb-8 pt-24 lg:px-8"><div className="mx-auto max-w-7xl">{children}</div></main></div>
+  return <div className="min-h-screen"><main className="sailwind-grid min-h-screen px-6 pb-8 pt-24 lg:px-8"><div className="mx-auto max-w-7xl">{children}</div></main></div>
 }
