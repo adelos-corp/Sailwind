@@ -3,10 +3,10 @@
 @tailwind utilities;
 
 :root {
-  --visa-blue: #0969da;
-  --visa-border: #d0d7de;
-  --visa-muted: #656d76;
-  --visa-bg: #f6f8fa;
+  --sailwind-blue: #0969da;
+  --sailwind-border: #d0d7de;
+  --sailwind-muted: #656d76;
+  --sailwind-bg: #f6f8fa;
 }
 
 html {
@@ -29,7 +29,7 @@ button, input { font: inherit; }
 
 ::selection { background: rgba(148, 163, 184, 0.18); }
 
-.visa-grid {
+.sailwind-grid {
   position: relative;
   background:
     radial-gradient(circle at 50% 0%, rgba(43, 67, 98, 0.34) 0%, transparent 30%),
@@ -37,21 +37,21 @@ button, input { font: inherit; }
     linear-gradient(180deg, #05080d 0%, #02040a 100%);
 }
 
-.visa-card {
+.sailwind-card {
   @apply rounded-[24px] border border-white/10 bg-white/[0.035] backdrop-blur-xl;
   box-shadow: 0 24px 70px rgba(0,0,0,.16);
 }
 
-.visa-eyebrow {
+.sailwind-eyebrow {
   @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500;
 }
 
-.visa-mono {
+.sailwind-mono {
   font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, "Liberation Mono", monospace;
 }
 
-[data-compact="true"] .visa-card { border-radius: 0.75rem; }
-[data-compact="true"] .visa-card > * { --tw-space-y-reverse: 1; }
+[data-compact="true"] .sailwind-card { border-radius: 0.75rem; }
+[data-compact="true"] .sailwind-card > * { --tw-space-y-reverse: 1; }
 
 [data-reduced-motion="true"] *,
 [data-reduced-motion="true"] *::before,
@@ -73,11 +73,11 @@ button, input { font: inherit; }
   background: #f6f8fa;
 }
 
-[data-theme="light"] .visa-grid {
+[data-theme="light"] .sailwind-grid {
   background: radial-gradient(circle at 50% 0%, #ffffff 0%, #f6f8fa 52%, #eef1f4 100%);
 }
 
-[data-theme="light"] .visa-card {
+[data-theme="light"] .sailwind-card {
   background: rgba(255, 255, 255, 0.82) !important;
   border-color: #d8dee4 !important;
   box-shadow: 0 10px 30px rgba(31, 35, 40, 0.05);
@@ -168,8 +168,8 @@ button, input { font: inherit; }
 }
 
 
-/* VISA editorial / Awwwards-inspired settings system */
-.visa-settings-card {
+/* Sailwind editorial / Awwwards-inspired settings system */
+.sailwind-settings-card {
   overflow: hidden;
   border: 1px solid rgba(255,255,255,0.09);
   border-radius: 28px;
@@ -179,29 +179,29 @@ button, input { font: inherit; }
   -webkit-backdrop-filter: blur(18px);
 }
 
-.visa-setting-row {
+.sailwind-setting-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 2rem;
   padding: 1.35rem 1.5rem;
 }
-@media (min-width: 640px) { .visa-setting-row { padding-left: 2rem; padding-right: 2rem; } }
+@media (min-width: 640px) { .sailwind-setting-row { padding-left: 2rem; padding-right: 2rem; } }
 
-.visa-setting-row h2, .visa-danger-row h2 {
+.sailwind-setting-row h2, .sailwind-danger-row h2 {
   color: #f8fafc;
   font-size: .82rem;
   font-weight: 600;
   letter-spacing: -.01em;
 }
-.visa-setting-row p, .visa-danger-row p {
+.sailwind-setting-row p, .sailwind-danger-row p {
   margin-top: .35rem;
   color: #64748b;
   font-size: .72rem;
   line-height: 1.35rem;
 }
 
-.visa-segmented {
+.sailwind-segmented {
   display: flex;
   max-width: 100%;
   overflow-x: auto;
@@ -210,7 +210,7 @@ button, input { font: inherit; }
   padding: 3px;
   background: rgba(255,255,255,.025);
 }
-.visa-segmented button {
+.sailwind-segmented button {
   white-space: nowrap;
   border-radius: 999px;
   padding: .45rem .75rem;
@@ -219,14 +219,14 @@ button, input { font: inherit; }
   font-weight: 600;
   transition: all .2s ease;
 }
-.visa-segmented button:hover { color: #e2e8f0; }
-.visa-segmented button.is-active {
+.sailwind-segmented button:hover { color: #e2e8f0; }
+.sailwind-segmented button.is-active {
   color: #020617;
   background: #fff;
   box-shadow: 0 4px 16px rgba(0,0,0,.18);
 }
 
-.visa-toggle {
+.sailwind-toggle {
   position: relative;
   flex-shrink: 0;
   width: 2.8rem;
@@ -236,7 +236,7 @@ button, input { font: inherit; }
   background: rgba(255,255,255,.045);
   transition: .2s ease;
 }
-.visa-toggle span {
+.sailwind-toggle span {
   position: absolute;
   top: 3px;
   left: 3px;
@@ -246,10 +246,10 @@ button, input { font: inherit; }
   background: #94a3b8;
   transition: .2s ease;
 }
-.visa-toggle.is-on { border-color: rgba(88,166,255,.3); background: rgba(88,166,255,.16); }
-.visa-toggle.is-on span { left: calc(100% - 1.45rem); background: #fff; }
+.sailwind-toggle.is-on { border-color: rgba(88,166,255,.3); background: rgba(88,166,255,.16); }
+.sailwind-toggle.is-on span { left: calc(100% - 1.45rem); background: #fff; }
 
-.visa-select, .visa-input {
+.sailwind-select, .sailwind-input {
   border: 1px solid rgba(255,255,255,.1);
   border-radius: 999px;
   background: rgba(255,255,255,.035);
@@ -258,10 +258,10 @@ button, input { font: inherit; }
   font-size: .7rem;
   outline: none;
 }
-.visa-select:focus, .visa-input:focus { border-color: rgba(88,166,255,.45); box-shadow: 0 0 0 3px rgba(88,166,255,.08); }
-.visa-select option { background: #0b1220; color: #fff; }
+.sailwind-select:focus, .sailwind-input:focus { border-color: rgba(88,166,255,.45); box-shadow: 0 0 0 3px rgba(88,166,255,.08); }
+.sailwind-select option { background: #0b1220; color: #fff; }
 
-.visa-danger-row {
+.sailwind-danger-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -270,8 +270,8 @@ button, input { font: inherit; }
   padding: 1.5rem 0;
   border-top: 1px solid rgba(255,255,255,.09);
 }
-@media (min-width: 640px) { .visa-danger-row { margin-left: 2rem; margin-right: 2rem; } }
-.visa-danger-button {
+@media (min-width: 640px) { .sailwind-danger-row { margin-left: 2rem; margin-right: 2rem; } }
+.sailwind-danger-button {
   flex-shrink: 0;
   border: 1px solid rgba(248,113,113,.18);
   border-radius: 999px;
@@ -281,33 +281,33 @@ button, input { font: inherit; }
   font-size: .68rem;
   font-weight: 600;
 }
-.visa-danger-button:hover { background: rgba(248,113,113,.1); }
+.sailwind-danger-button:hover { background: rgba(248,113,113,.1); }
 
-[data-glass-effects="false"] .visa-settings-card {
+[data-glass-effects="false"] .sailwind-settings-card {
   background: #0a0f18;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   box-shadow: none;
 }
-[data-accent="neutral"] .visa-toggle.is-on { border-color: rgba(255,255,255,.22); background: rgba(255,255,255,.12); }
+[data-accent="neutral"] .sailwind-toggle.is-on { border-color: rgba(255,255,255,.22); background: rgba(255,255,255,.12); }
 
-[data-theme="light"] .visa-settings-card {
+[data-theme="light"] .sailwind-settings-card {
   background: rgba(255,255,255,.82);
   border-color: #d8dee4;
   box-shadow: 0 24px 60px rgba(31,35,40,.06);
 }
-[data-theme="light"] .visa-setting-row h2, [data-theme="light"] .visa-danger-row h2 { color: #1f2328; }
-[data-theme="light"] .visa-setting-row p, [data-theme="light"] .visa-danger-row p { color: #656d76; }
-[data-theme="light"] .visa-segmented { border-color: #d8dee4; background: #f6f8fa; }
-[data-theme="light"] .visa-segmented button { color: #656d76; }
-[data-theme="light"] .visa-segmented button.is-active { color: #fff; background: #1f2328; }
-[data-theme="light"] .visa-toggle { border-color: #d0d7de; background: #f6f8fa; }
-[data-theme="light"] .visa-toggle span { background: #8c959f; }
-[data-theme="light"] .visa-toggle.is-on { background: #1f2328; border-color: #1f2328; }
-[data-theme="light"] .visa-select, [data-theme="light"] .visa-input { color: #1f2328; background: #fff; border-color: #d0d7de; }
-[data-theme="light"] .visa-select option { background: #fff; color: #1f2328; }
+[data-theme="light"] .sailwind-setting-row h2, [data-theme="light"] .sailwind-danger-row h2 { color: #1f2328; }
+[data-theme="light"] .sailwind-setting-row p, [data-theme="light"] .sailwind-danger-row p { color: #656d76; }
+[data-theme="light"] .sailwind-segmented { border-color: #d8dee4; background: #f6f8fa; }
+[data-theme="light"] .sailwind-segmented button { color: #656d76; }
+[data-theme="light"] .sailwind-segmented button.is-active { color: #fff; background: #1f2328; }
+[data-theme="light"] .sailwind-toggle { border-color: #d0d7de; background: #f6f8fa; }
+[data-theme="light"] .sailwind-toggle span { background: #8c959f; }
+[data-theme="light"] .sailwind-toggle.is-on { background: #1f2328; border-color: #1f2328; }
+[data-theme="light"] .sailwind-select, [data-theme="light"] .sailwind-input { color: #1f2328; background: #fff; border-color: #d0d7de; }
+[data-theme="light"] .sailwind-select option { background: #fff; color: #1f2328; }
 
-[data-reduced-motion="true"] .visa-settings-card,
-[data-reduced-motion="true"] .visa-toggle,
-[data-reduced-motion="true"] .visa-toggle span,
-[data-reduced-motion="true"] .visa-segmented button { transition: none !important; }
+[data-reduced-motion="true"] .sailwind-settings-card,
+[data-reduced-motion="true"] .sailwind-toggle,
+[data-reduced-motion="true"] .sailwind-toggle span,
+[data-reduced-motion="true"] .sailwind-segmented button { transition: none !important; }
