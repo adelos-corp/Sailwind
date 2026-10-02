@@ -3,7 +3,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod'
 
-const API_BASE = process.env.VISA_API_URL ?? 'http://localhost:3001'
+const API_BASE = process.env.Sailwind_API_URL ?? 'http://localhost:3001'
 
 // ─── HTTP helper ─────────────────────────────────────────────────────────────
 
@@ -29,13 +29,13 @@ function errText(err: unknown) {
 
 // ─── Server ───────────────────────────────────────────────────────────────────
 
-const server = new McpServer({ name: 'visa-mcp', version: '0.1.0' })
+const server = new McpServer({ name: 'sailwind-mcp', version: '0.1.0' })
 
 // ── Projects ──────────────────────────────────────────────────────────────────
 
 server.registerTool(
-  'visa_list_projects',
-  { description: 'List all VISA-managed projects.' },
+  'sailwind_list_projects',
+  { description: 'List all Sailwind-managed projects.' },
   async () => {
     try {
       const data = await api<{ projects: unknown[] }>('/projects')
@@ -47,10 +47,10 @@ server.registerTool(
 )
 
 server.registerTool(
-  'visa_create_project',
+  'sailwind_create_project',
   {
     description:
-      'Create a new VISA project from a Git URL or local filesystem path, then immediately trigger its first deployment. Returns the created project and deployment.',
+      'Create a new Sailwind project from a Git URL or local filesystem path, then immediately trigger its first deployment. Returns the created project and deployment.',
     inputSchema: {
       source: z
         .string()
@@ -87,9 +87,9 @@ server.registerTool(
 )
 
 server.registerTool(
-  'visa_get_project',
+  'sailwind_get_project',
   {
-    description: 'Get details of a specific VISA project, including all its deployments.',
+    description: 'Get details of a specific Sailwind project, including all its deployments.',
     inputSchema: {
       projectId: z.string().describe('The project UUID'),
     },
@@ -110,7 +110,7 @@ server.registerTool(
 // ── Deployments ───────────────────────────────────────────────────────────────
 
 server.registerTool(
-  'visa_get_deployment',
+  'sailwind_get_deployment',
   {
     description: 'Get the current status and metadata of a deployment.',
     inputSchema: {
@@ -128,7 +128,7 @@ server.registerTool(
 )
 
 server.registerTool(
-  'visa_get_deployment_logs',
+  'sailwind_get_deployment_logs',
   {
     description: 'Retrieve the log lines produced during a deployment run.',
     inputSchema: {
@@ -151,10 +151,10 @@ server.registerTool(
 )
 
 server.registerTool(
-  'visa_approve_deployment',
+  'sailwind_approve_deployment',
   {
     description:
-      'Submit an approval or rejection at a VISA gate. Use gate="DEPLOY" for initial deployment approval, gate="CORRECT" when approving an auto-correction after a failure.',
+      'Submit an approval or rejection at a Sailwind gate. Use gate="DEPLOY" for initial deployment approval, gate="CORRECT" when approving an auto-correction after a failure.',
     inputSchema: {
       deploymentId: z.string().describe('The deployment UUID'),
       gate: z.enum(['DEPLOY', 'CORRECT']).describe('Which gate to act on'),
@@ -176,9 +176,9 @@ server.registerTool(
 )
 
 server.registerTool(
-  'visa_trigger_deployment',
+  'sailwind_trigger_deployment',
   {
-    description: 'Trigger a new deployment attempt for an existing VISA project.',
+    description: 'Trigger a new deployment attempt for an existing Sailwind project.',
     inputSchema: {
       projectId: z.string().describe('The project UUID'),
     },
@@ -200,7 +200,7 @@ server.registerTool(
 async function main() {
   const transport = new StdioServerTransport()
   await server.connect(transport)
-  console.error('visa-mcp running on stdio')
+  console.error('sailwind-mcp running on stdio')
 }
 
 main().catch((err) => {
