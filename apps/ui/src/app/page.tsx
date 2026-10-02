@@ -26,21 +26,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      <section className="border-t border-white/10 px-6 py-24 sm:px-8 sm:py-32">
-        <div className="mx-auto grid max-w-5xl gap-10 sm:grid-cols-3">
-          {[
-            ['Analyze', 'Understand the application before execution.'],
-            ['Recover', 'Diagnose bounded failures and propose a correction.'],
-            ['Verify', 'Check the running application, not just the command.'],
-          ].map(([title, copy]) => (
-            <div key={title}>
-              <h2 className="text-lg font-medium tracking-[-0.02em] text-white">{title}</h2>
-              <p className="mt-2 max-w-xs text-sm leading-6 text-slate-500">{copy}</p>
-            </div>
-          ))}
-        </div>
-      </section>
     </main>
   )
 }
