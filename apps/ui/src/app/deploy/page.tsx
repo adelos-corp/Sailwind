@@ -5,17 +5,17 @@ import Link from 'next/link'
 
 export default function DeployPage() {
   return (
-    <main className="visa-grid min-h-screen px-4 pb-24 pt-32 sm:px-6 lg:px-8">
+    <main className="sailwind-grid min-h-screen px-4 pb-24 pt-32 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl">
         <div className="mb-10 max-w-2xl">
-          <p className="visa-eyebrow">Deployment center</p>
+          <p className="sailwind-eyebrow">Deployment center</p>
           <h1 className="mt-2 text-4xl font-semibold tracking-[-0.04em] text-white sm:text-5xl">Ship without the guesswork.</h1>
           <p className="mt-4 text-sm leading-6 text-slate-400 sm:text-base">
-            Connect a repository, let VISA inspect it, review the plan, and keep a human approval gate before anything consequential happens.
+            Connect a repository, let Sailwind inspect it, review the plan, and keep a human approval gate before anything consequential happens.
           </p>
         </div>
 
-        <section className="visa-card overflow-hidden">
+        <section className="sailwind-card overflow-hidden">
           <div className="border-b border-white/10 px-6 py-5 sm:px-8">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
