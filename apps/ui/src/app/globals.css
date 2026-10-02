@@ -311,3 +311,5 @@ button, input { font: inherit; }
 [data-reduced-motion="true"] .sailwind-toggle,
 [data-reduced-motion="true"] .sailwind-toggle span,
 [data-reduced-motion="true"] .sailwind-segmented button { transition: none !important; }
+
+/* Sailwind UI refresh: force a fresh production build after the navigation redesign. */
