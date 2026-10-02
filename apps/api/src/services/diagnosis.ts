@@ -42,18 +42,18 @@ export function diagnose(input: DiagnosisInput): DiagnosisResult {
   const missingEnvMatch = logText.match(/\[fatal\]\s+(\w+)\s+environment variable is required/)
   if (missingEnvMatch) {
     const varName = missingEnvMatch[1]
-    const diff = buildEnvDiff(input.projectPath, varName, 'visa-demo-secret')
+    const diff = buildEnvDiff(input.projectPath, varName, 'sailwind-demo-secret')
     return {
       failureType: 'CORRECTABLE',
       rootCause: `Required environment variable ${varName} is not set. The application exits immediately on startup.`,
       proposedCorrection: {
         type: 'ADD_ENV_VAR',
-        description: `Add ENV ${varName}=visa-demo-secret to Dockerfile`,
+        description: `Add ENV ${varName}=sailwind-demo-secret to Dockerfile`,
         envVar: varName,
-        envValue: 'visa-demo-secret',
+        envValue: 'sailwind-demo-secret',
         dockerfilePatch: {
           search: 'CMD ["node", "server.js"]',
-          replace: `ENV ${varName}=visa-demo-secret\nCMD ["node", "server.js"]`,
+          replace: `ENV ${varName}=sailwind-demo-secret\nCMD ["node", "server.js"]`,
         },
         diff,
       },
