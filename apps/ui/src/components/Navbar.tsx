@@ -15,8 +15,8 @@ export function Navbar() {
   const pathname = usePathname()
 
   useEffect(() => {
-    if (pathname !== '/' || sessionStorage.getItem('visa-scroll-home') !== 'true') return
-    sessionStorage.removeItem('visa-scroll-home')
+    if (pathname !== '/' || sessionStorage.getItem('sailwind-scroll-home') !== 'true') return
+    sessionStorage.removeItem('sailwind-scroll-home')
     requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }))
   }, [pathname])
 
@@ -27,7 +27,7 @@ export function Navbar() {
       return
     }
 
-    sessionStorage.setItem('visa-scroll-home', 'true')
+    sessionStorage.setItem('sailwind-scroll-home', 'true')
   }
 
   return (
@@ -40,14 +40,14 @@ export function Navbar() {
           backgroundOpacity={0.34}
           saturation={0.9}
           distortionScale={-60}
-          className="visa-navbar-glass border border-[#355b88]/30 shadow-2xl shadow-black/30"
+          className="sailwind-navbar-glass border border-[#355b88]/30 shadow-2xl shadow-black/30"
         >
           <nav className="flex h-full w-full items-center justify-between px-3 sm:px-4">
             <div className="flex items-center gap-2.5">
               <a href="https://adeloscorp.com" target="_blank" rel="noreferrer" aria-label="ADELOS Corp." title="ADELOS Corp.">
                 <img src="/adelo-logo.svg" alt="ADELOS Corp." className="h-7 w-8 object-contain transition-opacity hover:opacity-80" />
               </a>
-              <Link href="/" onClick={handleHomeClick} className="text-sm font-semibold text-slate-100">VISA</Link>
+              <Link href="/" onClick={handleHomeClick} className="text-sm font-semibold text-slate-100">Sailwind</Link>
             </div>
 
             <div className="flex items-center gap-1 text-xs">
