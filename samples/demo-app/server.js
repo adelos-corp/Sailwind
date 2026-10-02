@@ -1,4 +1,4 @@
-// demo-app — intentional failure scenario for the VISA pipeline demo.
+// demo-app — intentional failure scenario for the Sailwind pipeline demo.
 //
 // FAILURE: The app crashes on startup if APP_SECRET is missing.
 // This triggers:
@@ -23,11 +23,11 @@ const PORT = parseInt(process.env.PORT ?? '8080', 10)
 
 app.use(express.json())
 
-// Health endpoint — probed by VISA verifier
+// Health endpoint — probed by Sailwind verifier
 app.get('/health', (_req, res) => {
   res.json({
     status: 'ok',
-    service: 'visa-demo-app',
+    service: 'sailwind-demo-app',
     version: '1.0.0',
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
@@ -37,7 +37,7 @@ app.get('/health', (_req, res) => {
 // Home
 app.get('/', (_req, res) => {
   res.json({
-    message: 'Hello from the VISA demo app!',
+    message: 'Hello from the Sailwind demo app!',
     routes: ['GET /', 'GET /health', 'GET /items', 'POST /items'],
   })
 })
@@ -63,5 +63,5 @@ app.post('/items', (req, res) => {
 })
 
 app.listen(PORT, () => {
-  console.log(`visa-demo-app listening on http://0.0.0.0:${PORT}`)
+  console.log(`sailwind-demo-app listening on http://0.0.0.0:${PORT}`)
 })
