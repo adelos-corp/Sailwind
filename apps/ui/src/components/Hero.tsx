@@ -38,7 +38,7 @@ export function Hero() {
 
           <div className="mx-auto max-w-5xl">
             <StrokeText
-              text="VISA"
+              text="Sailwind"
               strokeColor={light ? '#57606a' : '#58a6ff'}
               fillColor={light ? '#1f2328' : '#f0f6fc'}
               fontSize={180}
