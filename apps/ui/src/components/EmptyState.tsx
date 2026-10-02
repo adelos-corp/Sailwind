@@ -32,11 +32,11 @@ export function EmptyState() {
       .finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <div className="visa-card p-6 text-xs text-slate-400">Loading deployment activity…</div>
+  if (loading) return <div className="sailwind-card p-6 text-xs text-slate-400">Loading deployment activity…</div>
 
   if (items.length === 0) {
     return (
-      <div className="visa-card border-dashed p-10 text-center">
+      <div className="sailwind-card border-dashed p-10 text-center">
         <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-slate-950 text-sm font-bold text-white">V</div>
         <p className="text-sm font-semibold text-slate-700">No deployment activity</p>
         <p className="mt-1 text-xs text-slate-400">Submit a repository above to initialize a managed deployment.</p>
@@ -45,14 +45,14 @@ export function EmptyState() {
   }
 
   return (
-    <div className="visa-card overflow-hidden">
+    <div className="sailwind-card overflow-hidden">
       <div className="grid grid-cols-[1.2fr_.7fr_.45fr] gap-4 border-b border-slate-100 bg-slate-50/70 px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
         <span>Application</span><span>Created</span><span>State</span>
       </div>
       <div className="divide-y divide-slate-100">
         {items.map(({ deployment, project }) => (
           <Link key={deployment.id} href={`/deployments/${deployment.id}`} className="grid grid-cols-1 gap-3 px-5 py-4 transition-colors hover:bg-slate-50 sm:grid-cols-[1.2fr_.7fr_.45fr] sm:items-center">
-            <div className="min-w-0"><p className="truncate text-xs font-semibold text-slate-800">{project.name}</p><p className="visa-mono mt-1 truncate text-[9px] text-slate-400">{deployment.id}</p></div>
+            <div className="min-w-0"><p className="truncate text-xs font-semibold text-slate-800">{project.name}</p><p className="sailwind-mono mt-1 truncate text-[9px] text-slate-400">{deployment.id}</p></div>
             <p className="text-[10px] text-slate-400">{new Date(deployment.createdAt).toLocaleString()}</p>
             <span className={`inline-flex w-fit rounded-full border px-2 py-1 text-[9px] font-semibold ${statusClass[deployment.status] ?? 'border-slate-200 bg-slate-50 text-slate-600'}`}>{deployment.status.replace('_', ' ')}</span>
           </Link>
