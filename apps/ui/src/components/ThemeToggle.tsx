@@ -6,7 +6,7 @@ export function ThemeToggle() {
   const [light, setLight] = useState(false)
 
   useEffect(() => {
-    const stored = localStorage.getItem('visa-theme')
+    const stored = localStorage.getItem('sailwind-theme')
     const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches
     const isLight = stored ? stored === 'light' : prefersLight
     document.documentElement.dataset.theme = isLight ? 'light' : 'dark'
@@ -17,7 +17,7 @@ export function ThemeToggle() {
     const next = !light
     setLight(next)
     document.documentElement.dataset.theme = next ? 'light' : 'dark'
-    localStorage.setItem('visa-theme', next ? 'light' : 'dark')
+    localStorage.setItem('sailwind-theme', next ? 'light' : 'dark')
   }
 
   return (
