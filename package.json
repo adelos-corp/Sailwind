@@ -1,13 +1,13 @@
 {
-  "name": "visa",
+  "name": "sailwind",
   "version": "0.1.0",
   "private": true,
-  "description": "VISA — Fast, Approved, Auto-Correctible Web Deployment Platform",
+  "description": "Sailwind — Fast, Approved, Auto-Correctible Web Deployment Platform",
   "scripts": {
     "dev": "pnpm --parallel -r dev",
-    "dev:api": "pnpm --filter @visa/api dev",
-    "dev:ui": "pnpm --filter @visa/ui dev",
-    "dev:mcp": "pnpm --filter @visa/mcp dev",
+    "dev:api": "pnpm --filter @sailwind/api dev",
+    "dev:ui": "pnpm --filter @sailwind/ui dev",
+    "dev:mcp": "pnpm --filter @sailwind/mcp dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
