@@ -22,7 +22,7 @@ async function main() {
   // Health check
   app.get('/health', async () => ({
     status: 'ok',
-    service: 'visa-api',
+    service: 'sailwind-api',
     version: '0.1.0',
     timestamp: new Date().toISOString(),
   }))
@@ -33,7 +33,7 @@ async function main() {
 
   // Start server
   await app.listen({ port: PORT, host: HOST })
-  console.log(`✓ visa-api listening on http://localhost:${PORT}`)
+  console.log(`✓ sailwind-api listening on http://localhost:${PORT}`)
 }
 
 main().catch((err) => {
