@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import GlassSurface from '@/components/react-bits/GlassSurface'
 
@@ -9,15 +9,44 @@ const links = [
   { href: '/', label: 'Overview' },
   { href: '/projects', label: 'Projects' },
   { href: '/deploy', label: 'Deploy' },
+  { href: '/about', label: 'About' },
 ]
 
 export function Navbar() {
   const pathname = usePathname()
+  const navRef = useRef<HTMLDivElement>(null)
+  const itemRefs = useRef<Record<string, HTMLAnchorElement | null>>({})
+  const [indicator, setIndicator] = useState({ left: 0, width: 0, ready: false })
 
   useEffect(() => {
     if (pathname !== '/' || sessionStorage.getItem('sailwind-scroll-home') !== 'true') return
     sessionStorage.removeItem('sailwind-scroll-home')
     requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }))
+  }, [pathname])
+
+  useLayoutEffect(() => {
+    const update = () => {
+      const activeHref = links.find(link => link.href === '/' ? pathname === '/' : pathname.startsWith(link.href))?.href ?? '/'
+      const nav = navRef.current
+      const item = itemRefs.current[activeHref]
+      if (!nav || !item) return
+      const navRect = nav.getBoundingClientRect()
+      const itemRect = item.getBoundingClientRect()
+      setIndicator({
+        left: itemRect.left - navRect.left,
+        width: itemRect.width,
+        ready: true,
+      })
+    }
+
+    update()
+    const observer = new ResizeObserver(update)
+    if (navRef.current) observer.observe(navRef.current)
+    window.addEventListener('resize', update)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', update)
+    }
   }, [pathname])
 
   function handleHomeClick(event: React.MouseEvent<HTMLAnchorElement>) {
@@ -26,7 +55,6 @@ export function Navbar() {
       window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
-
     sessionStorage.setItem('sailwind-scroll-home', 'true')
   }
 
@@ -43,38 +71,44 @@ export function Navbar() {
           className="sailwind-navbar-glass border border-[#355b88]/30 shadow-2xl shadow-black/30"
         >
           <nav className="flex h-full w-full items-center justify-between px-3 sm:px-4">
-            <div className="flex items-center gap-2.5">
-              <a href="https://adeloscorp.com" target="_blank" rel="noreferrer" aria-label="ADELOS Corp." title="ADELOS Corp.">
-                <img src="/adelo-logo.svg" alt="ADELOS Corp." className="h-7 w-8 object-contain transition-opacity hover:opacity-80" />
-              </a>
-              <Link href="/" onClick={handleHomeClick} className="text-sm font-semibold text-slate-100">Sailwind</Link>
-            </div>
+            <a
+              href="https://www.adeloscorp.com/technology/codelos"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Codelos by ADELOS Corp."
+              className="text-sm font-semibold tracking-[-0.02em] text-slate-100 transition-opacity hover:opacity-70"
+            >
+              Codelos
+            </a>
 
-            <div className="flex items-center gap-1 text-xs">
-              {links.map((link) => {
+            <div ref={navRef} className="relative flex items-center gap-1 text-xs">
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 rounded-full border border-white/10 bg-white/[0.10] shadow-[0_4px_18px_rgba(0,0,0,0.14)] transition-[transform,width] duration-500 ease-[cubic-bezier(.22,1,.36,1)]"
+                style={{
+                  width: indicator.width,
+                  transform: `translateX(${indicator.left}px)`,
+                  opacity: indicator.ready ? 1 : 0,
+                }}
+              />
+
+              {links.map(link => {
                 const active = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href)
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`rounded-full px-3.5 py-1.5 font-medium transition ${
-                      active ? 'bg-white/[0.10] text-white' : 'text-slate-400 hover:bg-white/[0.06] hover:text-slate-200'
+                    ref={node => { itemRefs.current[link.href] = node }}
+                    onClick={link.href === '/' ? handleHomeClick : undefined}
+                    aria-current={active ? 'page' : undefined}
+                    className={`relative z-10 rounded-full px-3.5 py-1.5 font-medium transition-colors duration-300 ${
+                      active ? 'text-white' : 'text-slate-400 hover:text-slate-200'
                     }`}
                   >
                     {link.label}
                   </Link>
                 )
               })}
-
-              <span className="ml-1 hidden h-5 w-px bg-white/10 sm:block" />
-
-              <Link href="/about" className="hidden rounded-full px-3 py-1.5 text-slate-400 transition hover:bg-white/[0.06] hover:text-slate-200 md:block">About</Link>
-              <Link href="/preferences" aria-label="Preferences" className="hidden rounded-full px-3 py-1.5 text-slate-400 transition hover:bg-white/[0.06] hover:text-slate-200 sm:block">Preferences</Link>
-
-              <span className="ml-1 hidden items-center gap-1.5 border-l border-white/10 pl-3 text-slate-500 lg:flex">
-                <span className="h-1.5 w-1.5 rounded-full bg-slate-500" />
-                Operational
-              </span>
             </div>
           </nav>
         </GlassSurface>
