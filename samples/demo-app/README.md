@@ -1,6 +1,6 @@
-# visa-demo-app
+# sailwind-demo-app
 
-A minimal Express.js app used to exercise the full VISA deployment pipeline.
+A minimal Express.js app used to exercise the full Sailwind deployment pipeline.
 
 ## Usage
 
@@ -17,7 +17,7 @@ The server listens on `PORT` (default `8080`).
 | Method | Path      | Description                        |
 |--------|-----------|------------------------------------|
 | GET    | `/`       | Welcome message + route listing    |
-| GET    | `/health` | Health check (probed by VISA)      |
+| GET    | `/health` | Health check (probed by Sailwind)      |
 | GET    | `/items`  | List in-memory items               |
 | POST   | `/items`  | Create an item `{ "name": "..." }` |
 
