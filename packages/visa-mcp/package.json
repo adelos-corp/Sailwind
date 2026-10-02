@@ -1,12 +1,12 @@
 {
-  "name": "@visa/mcp",
+  "name": "@sailwind/mcp",
   "version": "0.1.0",
   "private": true,
-  "description": "VISA MCP server — exposes VISA project and deployment tools to IBM Bob",
+  "description": "Sailwind MCP server — exposes Sailwind project and deployment tools to IBM Bob",
   "type": "module",
   "main": "./build/index.js",
   "bin": {
-    "visa-mcp": "./build/index.js"
+    "sailwind-mcp": "./build/index.js"
   },
   "files": ["build"],
   "scripts": {
