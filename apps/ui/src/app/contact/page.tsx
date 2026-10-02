@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 export default function ContactPage() {
   const [copied, setCopied] = useState(false)
-  const issueUrl = 'https://github.com/adelos-corp/VISA-IBM/issues/new'
+  const issueUrl = 'https://github.com/adelos-corp/Sailwind-IBM/issues/new'
 
   async function copyLink() {
     await navigator.clipboard?.writeText(issueUrl)
@@ -13,15 +13,15 @@ export default function ContactPage() {
   }
 
   return (
-    <main className="visa-grid min-h-screen px-4 pb-24 pt-32 sm:px-6 lg:px-8">
+    <main className="sailwind-grid min-h-screen px-4 pb-24 pt-32 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl">
         <div className="max-w-2xl">
-          <p className="visa-eyebrow">Contact</p>
+          <p className="sailwind-eyebrow">Contact</p>
           <h1 className="mt-2 text-4xl font-semibold tracking-[-0.04em] text-white sm:text-5xl">Tell us what broke. Or what should exist.</h1>
           <p className="mt-4 text-sm leading-6 text-slate-400">For this prototype, feedback and issue reports live alongside the project so the whole team can see them.</p>
         </div>
 
-        <section className="mt-10 visa-card p-6 sm:p-8">
+        <section className="mt-10 sailwind-card p-6 sm:p-8">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-sm font-semibold text-white">Open a GitHub issue</p>
