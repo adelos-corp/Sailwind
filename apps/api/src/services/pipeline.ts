@@ -1,4 +1,4 @@
-// Pipeline orchestrator — drives the full VISA workflow for one deployment.
+// Pipeline orchestrator — drives the full Sailwind workflow for one deployment.
 // Called on POST /deployments/:id/run and resumed after approvals.
 
 import path from 'path'
@@ -64,18 +64,18 @@ export async function startPipeline(deploymentId: string): Promise<void> {
     // ── Stage 1: ANALYZING ──────────────────────────────────────────────────
     transition(deploymentId, 'ANALYZING')
     emitStage(deploymentId, 'analysis', 'RUNNING')
-    log(deploymentId, 'visa', `Analyzing project at ${projectPath}`)
+    log(deploymentId, 'sailwind', `Analyzing project at ${projectPath}`)
 
     const analysis = analyzeProject(projectPath)
     upsertAnalysis({ projectId: deployment.projectId, ...analysis })
-    log(deploymentId, 'visa', `Framework: ${analysis.framework} | Runtime: ${analysis.runtime} | Port: ${analysis.port}`)
-    log(deploymentId, 'visa', `Env vars referenced: ${analysis.envVarsNeeded.join(', ') || 'none'}`)
+    log(deploymentId, 'sailwind', `Framework: ${analysis.framework} | Runtime: ${analysis.runtime} | Port: ${analysis.port}`)
+    log(deploymentId, 'sailwind', `Env vars referenced: ${analysis.envVarsNeeded.join(', ') || 'none'}`)
     emitStage(deploymentId, 'analysis', 'DONE')
 
     // ── Stage 2: PRE-CHECKS ─────────────────────────────────────────────────
     transition(deploymentId, 'CHECKING')
     emitStage(deploymentId, 'pre-checks', 'RUNNING')
-    log(deploymentId, 'visa', 'Running parallel pre-checks…')
+    log(deploymentId, 'sailwind', 'Running parallel pre-checks…')
 
     const { checks, overallStatus } = await runPreChecks(projectPath)
     savePreCheckReport({ deploymentId, checks, overallStatus })
@@ -86,13 +86,13 @@ export async function startPipeline(deploymentId: string): Promise<void> {
     emitStage(deploymentId, 'pre-checks', overallStatus === 'FAIL' ? 'FAILED' : 'DONE', { overallStatus })
 
     if (overallStatus === 'FAIL') {
-      log(deploymentId, 'visa', 'Pre-checks FAILED — deployment cannot proceed.')
+      log(deploymentId, 'sailwind', 'Pre-checks FAILED — deployment cannot proceed.')
       transition(deploymentId, 'TERMINAL')
       return
     }
 
     // ── Stage 3: PLAN ───────────────────────────────────────────────────────
-    const tag = `visa-${deploymentId.slice(0, 8)}`
+    const tag = `sailwind-${deploymentId.slice(0, 8)}`
     const plan: DeploymentPlan = {
       imageTag: tag,
       port: analysis.port,
@@ -108,17 +108,17 @@ export async function startPipeline(deploymentId: string): Promise<void> {
       ],
     }
     savePlan(deploymentId, plan)
-    log(deploymentId, 'visa', `Plan: image=${tag} port=${analysis.port} health=${analysis.healthPath}`)
-    log(deploymentId, 'visa', `Env vars to inject: ${JSON.stringify(plan.envVars)}`)
+    log(deploymentId, 'sailwind', `Plan: image=${tag} port=${analysis.port} health=${analysis.healthPath}`)
+    log(deploymentId, 'sailwind', `Env vars to inject: ${JSON.stringify(plan.envVars)}`)
     for (const step of plan.steps) log(deploymentId, 'plan', step)
 
     // ── Gate 1: AWAITING_APPROVAL ────────────────────────────────────────────
     transition(deploymentId, 'AWAITING_APPROVAL')
-    log(deploymentId, 'visa', 'Waiting for human approval before deployment…')
+    log(deploymentId, 'sailwind', 'Waiting for human approval before deployment…')
     // Pipeline pauses here — resumed by resumeAfterApproval()
 
   } catch (err) {
-    log(deploymentId, 'visa', `Pipeline error: ${err}`)
+    log(deploymentId, 'sailwind', `Pipeline error: ${err}`)
     transition(deploymentId, 'FAILED')
     emitStage(deploymentId, 'pipeline', 'FAILED')
   }
@@ -131,14 +131,14 @@ export async function resumeAfterDeployApproval(deploymentId: string): Promise<v
 
   const project = getProjectById(deployment.projectId)
   if (!project?.localPath && !project?.gitUrl) {
-    log(deploymentId, 'visa', 'Error: project source is not set')
+    log(deploymentId, 'sailwind', 'Error: project source is not set')
     transition(deploymentId, 'TERMINAL')
     return
   }
 
   const plan = getPlan(deploymentId)
   if (!plan) {
-    log(deploymentId, 'visa', 'Error: no deployment plan found')
+    log(deploymentId, 'sailwind', 'Error: no deployment plan found')
     transition(deploymentId, 'TERMINAL')
     return
   }
@@ -147,7 +147,7 @@ export async function resumeAfterDeployApproval(deploymentId: string): Promise<v
     // ── Stage 4: DEPLOYING ──────────────────────────────────────────────────
     transition(deploymentId, 'DEPLOYING')
     emitStage(deploymentId, 'deploy', 'RUNNING')
-    log(deploymentId, 'visa', `Building Docker image: ${plan.imageTag}`)
+    log(deploymentId, 'sailwind', `Building Docker image: ${plan.imageTag}`)
 
     const buildProjectPath = await resolveProjectPath(project, deploymentId)
     const buildSource = process.env.VERCEL === '1' || process.env.RUNNER_MODE === 'vercel-sandbox'
@@ -157,7 +157,7 @@ export async function resumeAfterDeployApproval(deploymentId: string): Promise<v
       log(deploymentId, 'docker:build', line)
     )
 
-    log(deploymentId, 'visa', 'Build complete — starting container')
+    log(deploymentId, 'sailwind', 'Build complete — starting container')
     const { containerId, port: hostPort } = await runContainer(plan.imageTag, plan, line =>
       log(deploymentId, 'docker:run', line)
     )
@@ -170,17 +170,17 @@ export async function resumeAfterDeployApproval(deploymentId: string): Promise<v
       ),
     }
     savePlan(deploymentId, runtimePlan)
-    log(deploymentId, 'visa', `Runtime host port allocated: ${hostPort}`)
+    log(deploymentId, 'sailwind', `Runtime host port allocated: ${hostPort}`)
     updateDeploymentStatus(deploymentId, 'DEPLOYING', { containerId })
 
-    log(deploymentId, 'visa', `Watching container startup (${containerId.slice(0, 12)})…`)
+    log(deploymentId, 'sailwind', `Watching container startup (${containerId.slice(0, 12)})…`)
     const { exitCode, logs: containerLogs } = await waitForContainerExit(containerId, CONTAINER_STARTUP_GRACE_MS, line =>
       log(deploymentId, 'container', line)
     )
 
     if (exitCode !== 0) {
       emitStage(deploymentId, 'deploy', 'FAILED')
-      log(deploymentId, 'visa', `Container exited with code ${exitCode} — running diagnosis`)
+      log(deploymentId, 'sailwind', `Container exited with code ${exitCode} — running diagnosis`)
       await runDiagnosis(deploymentId, containerLogs, buildProjectPath, plan)
       return
     }
@@ -189,7 +189,7 @@ export async function resumeAfterDeployApproval(deploymentId: string): Promise<v
     await runVerification(deploymentId, hostPort, plan, containerId, buildProjectPath)
 
   } catch (err) {
-    log(deploymentId, 'visa', `Deploy error: ${err}`)
+    log(deploymentId, 'sailwind', `Deploy error: ${err}`)
     transition(deploymentId, 'FAILED')
     emitStage(deploymentId, 'deploy', 'FAILED')
   }
@@ -202,28 +202,28 @@ export async function resumeAfterCorrectionApproval(deploymentId: string): Promi
 
   const project = getProjectById(deployment.projectId)
   if (!project?.localPath && !project?.gitUrl) {
-    log(deploymentId, 'visa', 'Error: project source is not set')
+    log(deploymentId, 'sailwind', 'Error: project source is not set')
     transition(deploymentId, 'TERMINAL')
     return
   }
 
   const diag = getDiagnosis(deploymentId)
   if (!diag) {
-    log(deploymentId, 'visa', 'Error: no diagnosis found')
+    log(deploymentId, 'sailwind', 'Error: no diagnosis found')
     transition(deploymentId, 'TERMINAL')
     return
   }
 
   const plan = getPlan(deploymentId)
   if (!plan) {
-    log(deploymentId, 'visa', 'Error: no plan found')
+    log(deploymentId, 'sailwind', 'Error: no plan found')
     transition(deploymentId, 'TERMINAL')
     return
   }
 
   const corrections = countCorrectionAttempts(deploymentId)
   if (corrections >= MAX_CORRECTIONS) {
-    log(deploymentId, 'visa', `Max correction attempts (${MAX_CORRECTIONS}) reached — marking TERMINAL`)
+    log(deploymentId, 'sailwind', `Max correction attempts (${MAX_CORRECTIONS}) reached — marking TERMINAL`)
     transition(deploymentId, 'TERMINAL')
     return
   }
@@ -233,7 +233,7 @@ export async function resumeAfterCorrectionApproval(deploymentId: string): Promi
     emitStage(deploymentId, 'correction', 'RUNNING')
 
     const correction = JSON.parse(diag.proposedCorrectionJson) as import('./diagnosis').ProposedCorrection
-    log(deploymentId, 'visa', `Applying correction: ${correction.description}`)
+    log(deploymentId, 'sailwind', `Applying correction: ${correction.description}`)
 
     const correctionProjectPath = await resolveProjectPath(project, deploymentId + '-correction')
     const result = await applyCorrection(correctionProjectPath, correction)
@@ -241,7 +241,7 @@ export async function resumeAfterCorrectionApproval(deploymentId: string): Promi
       const dockerfile = fs.readFileSync(path.join(correctionProjectPath, 'Dockerfile'), 'utf8')
       await syncRunnerFile(plan.imageTag, 'Dockerfile', dockerfile)
     }
-    log(deploymentId, 'visa', result.description)
+    log(deploymentId, 'sailwind', result.description)
 
     saveCorrectionAttempt({
       deploymentId,
@@ -252,7 +252,7 @@ export async function resumeAfterCorrectionApproval(deploymentId: string): Promi
     emitStage(deploymentId, 'correction', result.applied ? 'DONE' : 'FAILED')
 
     if (!result.applied) {
-      log(deploymentId, 'visa', 'Correction could not be applied — marking TERMINAL')
+      log(deploymentId, 'sailwind', 'Correction could not be applied — marking TERMINAL')
       transition(deploymentId, 'TERMINAL')
       return
     }
@@ -279,11 +279,11 @@ export async function resumeAfterCorrectionApproval(deploymentId: string): Promi
     savePlan(deploymentId, correctedPlan)
 
     // Redeploy with updated image
-    log(deploymentId, 'visa', 'Rebuilding image after correction…')
+    log(deploymentId, 'sailwind', 'Rebuilding image after correction…')
     if (correction.envVar && correction.envValue) {
       log(
         deploymentId,
-        'visa',
+        'sailwind',
         `Redeploy configuration: injecting approved ${correction.envVar} runtime value`
       )
     }
@@ -313,7 +313,7 @@ export async function resumeAfterCorrectionApproval(deploymentId: string): Promi
       ),
     }
     savePlan(deploymentId, runtimeCorrectedPlan)
-    log(deploymentId, 'visa', `Runtime host port allocated: ${hostPort}`)
+    log(deploymentId, 'sailwind', `Runtime host port allocated: ${hostPort}`)
     updateDeploymentStatus(deploymentId, 'DEPLOYING', { containerId })
 
     const { exitCode, logs: containerLogs } = await waitForContainerExit(containerId, CONTAINER_STARTUP_GRACE_MS, line =>
@@ -322,7 +322,7 @@ export async function resumeAfterCorrectionApproval(deploymentId: string): Promi
 
     if (exitCode !== 0) {
       emitStage(deploymentId, 'redeploy', 'FAILED')
-      log(deploymentId, 'visa', `Redeployment failed (exit ${exitCode}) — marking TERMINAL`)
+      log(deploymentId, 'sailwind', `Redeployment failed (exit ${exitCode}) — marking TERMINAL`)
       transition(deploymentId, 'TERMINAL')
       return
     }
@@ -331,7 +331,7 @@ export async function resumeAfterCorrectionApproval(deploymentId: string): Promi
     await runVerification(deploymentId, hostPort, correctedPlan, containerId, correctionProjectPath)
 
   } catch (err) {
-    log(deploymentId, 'visa', `Correction error: ${err}`)
+    log(deploymentId, 'sailwind', `Correction error: ${err}`)
     transition(deploymentId, 'TERMINAL')
   }
 }
@@ -348,7 +348,7 @@ async function runVerification(
   transition(deploymentId, 'VERIFYING')
   emitStage(deploymentId, 'verification', 'RUNNING')
   const endpoint = await getRunnerEndpoint(plan.imageTag, hostPort, plan.healthPath)
-  log(deploymentId, 'visa', `Verifying health at ${endpoint}`)
+  log(deploymentId, 'sailwind', `Verifying health at ${endpoint}`)
 
   const vr = await verifyHealthEndpoint(endpoint, line =>
     log(deploymentId, 'verify', line)
@@ -364,11 +364,11 @@ async function runVerification(
 
   if (vr.healthy) {
     emitStage(deploymentId, 'verification', 'DONE')
-    log(deploymentId, 'visa', `✓ Health check passed in ${vr.attempts} attempt(s)`)
+    log(deploymentId, 'sailwind', `✓ Health check passed in ${vr.attempts} attempt(s)`)
     transition(deploymentId, 'LIVE')
   } else {
     emitStage(deploymentId, 'verification', 'FAILED')
-    log(deploymentId, 'visa', `✗ Health check failed after ${vr.attempts} attempts`)
+    log(deploymentId, 'sailwind', `✗ Health check failed after ${vr.attempts} attempts`)
     await stopContainer(containerId)
     await runDiagnosis(deploymentId, [], projectPath, plan)
   }
@@ -397,7 +397,7 @@ async function verifyHealthEndpoint(endpoint: string, onLog: (line: string) => v
 async function resolveProjectPath(project: { localPath: string | null; gitUrl: string | null }, deploymentId: string): Promise<string> {
   if (project.localPath) return project.localPath
   if (!project.gitUrl) throw new Error('Project has no local path or Git URL')
-  const target = path.join('/tmp', 'visa-' + deploymentId.replace(/[^a-zA-Z0-9-]/g, '-'))
+  const target = path.join('/tmp', 'sailwind-' + deploymentId.replace(/[^a-zA-Z0-9-]/g, '-'))
   if (fs.existsSync(path.join(target, '.git'))) return target
   fs.rmSync(target, { recursive: true, force: true })
   await simpleGit().clone(project.gitUrl, target, ['--depth', '1'])
@@ -412,11 +412,11 @@ async function runDiagnosis(
 ): Promise<void> {
   transition(deploymentId, 'FAILED')
   emitStage(deploymentId, 'diagnosis', 'RUNNING')
-  log(deploymentId, 'visa', 'Running Granite 4.2 3B diagnosis…')
+  log(deploymentId, 'sailwind', 'Running Granite 4.2 3B diagnosis…')
 
   const corrections = countCorrectionAttempts(deploymentId)
   if (corrections >= MAX_CORRECTIONS) {
-    log(deploymentId, 'visa', 'Max corrections reached — no further auto-correction possible')
+    log(deploymentId, 'sailwind', 'Max corrections reached — no further auto-correction possible')
     emitStage(deploymentId, 'diagnosis', 'DONE', { failureType: 'UNRECOVERABLE', correctable: false })
     return
   }
@@ -432,7 +432,7 @@ async function runDiagnosis(
     }),
   })
   const result = ai.result
-  log(deploymentId, 'visa', ai.usedFallback
+  log(deploymentId, 'sailwind', ai.usedFallback
     ? `Granite unavailable after ${ai.durationMs}ms — ${ai.error ?? 'inference failed'}; deterministic diagnosis fallback used (${ai.modelUsed})`
     : `Granite model: ${ai.modelUsed} responded in ${ai.durationMs}ms`)
 
