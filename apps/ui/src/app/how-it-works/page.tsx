@@ -35,9 +35,9 @@ export default function HowItWorksPage() {
         </section>
 
         <section className="mt-20 grid gap-10 border-t border-white/10 pt-10 sm:grid-cols-3">
-          <div><h2 className="text-sm font-semibold text-white">Why it exists</h2><p className="mt-2 text-sm leading-6 text-slate-500">Deployment failures are part of shipping. Sailwind keeps diagnosis and recovery inside the same controlled workflow.</p></div>
-          <div><h2 className="text-sm font-semibold text-white">Who it serves</h2><p className="mt-2 text-sm leading-6 text-slate-500">Developers and teams who want fast deployment without giving up visibility or human approval.</p></div>
-          <div><h2 className="text-sm font-semibold text-white">What it changes</h2><p className="mt-2 text-sm leading-6 text-slate-500">Instead of stopping at failure, the system can explain a bounded problem, propose a correction, and return to verification.</p></div>
+          <div><h2 className="text-sm font-semibold text-white">Why</h2><p className="mt-2 text-sm leading-6 text-slate-500">Deployment failures are part of shipping. Sailwind keeps diagnosis and recovery inside the same controlled workflow.</p></div>
+          <div><h2 className="text-sm font-semibold text-white">Uses</h2><p className="mt-2 text-sm leading-6 text-slate-500">Use it to inspect repositories, review deployment plans, run controlled deployments, recover from bounded failures, and verify live applications.</p></div>
+          <div><h2 className="text-sm font-semibold text-white">Who</h2><p className="mt-2 text-sm leading-6 text-slate-500">Developers and teams who want fast deployment without giving up visibility or human approval.</p></div>
         </section>
 
         <div className="mt-12 flex flex-wrap gap-3">
