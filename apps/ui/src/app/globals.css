@@ -32,9 +32,9 @@ button, input { font: inherit; }
 .sailwind-grid {
   position: relative;
   background:
-    radial-gradient(circle at 50% 0%, rgba(43, 67, 98, 0.34) 0%, transparent 30%),
-    radial-gradient(circle at 85% 35%, rgba(38, 87, 137, 0.08) 0%, transparent 28%),
-    linear-gradient(180deg, #05080d 0%, #02040a 100%);
+    radial-gradient(circle at 18% 12%, rgba(37, 99, 235, 0.30) 0%, transparent 34%),
+    radial-gradient(circle at 82% 72%, rgba(249, 115, 22, 0.24) 0%, transparent 34%),
+    linear-gradient(135deg, #020617 0%, #0a2450 36%, #173a55 54%, #5a2a1b 76%, #140805 100%);
 }
 
 .sailwind-card {
